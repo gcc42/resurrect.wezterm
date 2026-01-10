@@ -7,7 +7,9 @@ local pub = {}
 ---@param workspace_state workspace_state
 ---@param opts? restore_opts
 function pub.restore_workspace(workspace_state, opts)
-	if workspace_state == nil then
+	-- Guard: nil state or empty window list
+	if not workspace_state or not workspace_state.window_states or #workspace_state.window_states == 0 then
+		wezterm.emit("resurrect.error", "Cannot restore empty or invalid workspace state")
 		return
 	end
 

@@ -71,12 +71,20 @@ end
 
 ---Saves the state after interval in seconds
 ---@param opts? { interval_seconds: integer?, save_workspaces: boolean?, save_windows: boolean?, save_tabs: boolean? }
+local save_in_progress = false
 function pub.periodic_save(opts)
 	-- Default options with ternary idiom
 	opts = opts or { save_workspaces = true }
 	opts.interval_seconds = opts.interval_seconds or (60 * 15)
 
 	wezterm.time.call_after(opts.interval_seconds, function()
+		-- Guard: skip if previous save still running (prevents overlap)
+		if save_in_progress then
+			pub.periodic_save(opts)  -- reschedule and check again later
+			return
+		end
+		save_in_progress = true
+
 		wezterm.emit("resurrect.state_manager.periodic_save.start", opts)
 
 		-- Helper: check if title is non-empty
@@ -106,6 +114,7 @@ function pub.periodic_save(opts)
 		end
 
 		wezterm.emit("resurrect.state_manager.periodic_save.finished", opts)
+		save_in_progress = false
 		pub.periodic_save(opts)
 	end)
 end
