@@ -4,32 +4,49 @@ local utils = require("resurrect.utils")
 
 local pub = {}
 
+--- Sanitizes a string to be safe for use as a filename on all platforms.
+--- Pure function: no side effects, deterministic output.
+---@param name string? The input string to sanitize
+---@return string The sanitized filename-safe string
+function pub.sanitize_filename(name)
+	if not name then return "_unnamed_" end
+
+	local result = name
+		:gsub("[/\\]", "+")            -- path separators -> + (preserves structure)
+		:gsub("%.%.", "_")             -- .. -> _ (prevent path traversal confusion)
+		:gsub('[<>:"|%?%*]', "_")      -- Windows-invalid chars -> _
+		:gsub("[\x00-\x1f\x7f]", "_")  -- control characters -> _
+		:gsub("[%. ]+$", "")           -- trim trailing dots/spaces (Windows)
+
+	return result ~= "" and result or "_unnamed_"
+end
+
 ---@param file_name string
 ---@param type string
 ---@param opt_name string?
 ---@return string
 local function get_file_path(file_name, type, opt_name)
-	if opt_name then
-		file_name = opt_name
-	end
-	return string.format(
-		"%s%s" .. utils.separator .. "%s.json",
-		pub.save_state_dir,
-		type,
-		file_name:gsub(utils.separator, "+")
-	)
+	-- Use opt_name if provided, otherwise use file_name
+	local sanitized_name = pub.sanitize_filename(opt_name or file_name)
+	return string.format("%s%s" .. utils.separator .. "%s.json", pub.save_state_dir, type, sanitized_name)
 end
 
 ---save state to a file
 ---@param state workspace_state | window_state | tab_state
 ---@param opt_name? string
 function pub.save_state(state, opt_name)
-	if state.window_states then
-		file_io.write_state(get_file_path(state.workspace, "workspace", opt_name), state, "workspace")
-	elseif state.tabs then
-		file_io.write_state(get_file_path(state.title, "window", opt_name), state, "window")
-	elseif state.pane_tree then
-		file_io.write_state(get_file_path(state.title, "tab", opt_name), state, "tab")
+	-- State type detection: maps state field to (type_name, name_field) pair
+	local state_types = {
+		{ field = "window_states", type = "workspace", name = state.workspace },
+		{ field = "tabs",          type = "window",    name = state.title },
+		{ field = "pane_tree",     type = "tab",       name = state.title },
+	}
+	-- Find matching state type and write
+	for _, st in ipairs(state_types) do
+		if state[st.field] then
+			file_io.write_state(get_file_path(st.name, st.type, opt_name), state, st.type)
+			return
+		end
 	end
 end
 
@@ -39,26 +56,32 @@ end
 ---@return table
 function pub.load_state(name, type)
 	wezterm.emit("resurrect.state_manager.load_state.start", name, type)
-	local json = file_io.load_json(get_file_path(name, type))
+	local file_path = get_file_path(name, type)
+	local json = file_io.load_json(file_path)
+
+	-- Guard: invalid json returns empty table with error event
 	if not json then
-		wezterm.emit("resurrect.error", "Invalid json: " .. get_file_path(name, type))
+		wezterm.emit("resurrect.error", "Invalid json: " .. file_path)
 		return {}
 	end
+
 	wezterm.emit("resurrect.state_manager.load_state.finished", name, type)
 	return json
 end
 
----Saves the stater after interval in seconds
+---Saves the state after interval in seconds
 ---@param opts? { interval_seconds: integer?, save_workspaces: boolean?, save_windows: boolean?, save_tabs: boolean? }
 function pub.periodic_save(opts)
-	if opts == nil then
-		opts = { save_workspaces = true }
-	end
-	if opts.interval_seconds == nil then
-		opts.interval_seconds = 60 * 15
-	end
+	-- Default options with ternary idiom
+	opts = opts or { save_workspaces = true }
+	opts.interval_seconds = opts.interval_seconds or (60 * 15)
+
 	wezterm.time.call_after(opts.interval_seconds, function()
 		wezterm.emit("resurrect.state_manager.periodic_save.start", opts)
+
+		-- Helper: check if title is non-empty
+		local function has_title(title) return title and title ~= "" end
+
 		if opts.save_workspaces then
 			pub.save_state(require("resurrect.workspace_state").get_workspace_state())
 		end
@@ -66,8 +89,7 @@ function pub.periodic_save(opts)
 		if opts.save_windows then
 			for _, gui_win in ipairs(wezterm.gui.gui_windows()) do
 				local mux_win = gui_win:mux_window()
-				local title = mux_win:get_title()
-				if title ~= "" and title ~= nil then
+				if has_title(mux_win:get_title()) then
 					pub.save_state(require("resurrect.window_state").get_window_state(mux_win))
 				end
 			end
@@ -75,10 +97,8 @@ function pub.periodic_save(opts)
 
 		if opts.save_tabs then
 			for _, gui_win in ipairs(wezterm.gui.gui_windows()) do
-				local mux_win = gui_win:mux_window()
-				for _, mux_tab in ipairs(mux_win:tabs()) do
-					local title = mux_tab:get_title()
-					if title ~= "" and title ~= nil then
+				for _, mux_tab in ipairs(gui_win:mux_window():tabs()) do
+					if has_title(mux_tab:get_title()) then
 						pub.save_state(require("resurrect.tab_state").get_tab_state(mux_tab))
 					end
 				end
