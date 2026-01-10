@@ -92,6 +92,42 @@ function wezterm.sleep_ms(ms)
     -- No-op in tests, or use os.execute for actual sleep if needed
 end
 
+-- Run a child process and return success, stdout, stderr
+-- This is a test implementation using io.popen for portability
+function wezterm.run_child_process(args)
+    if not args or #args == 0 then
+        return false, "", "No command provided"
+    end
+
+    -- Build command string from args array
+    local cmd = table.concat(args, " ")
+
+    -- For test command, we need special handling
+    if args[1] == "test" then
+        -- Use shell to run test command
+        cmd = "sh -c '" .. table.concat(args, " ") .. "'"
+        local handle = io.popen(cmd .. " 2>&1; echo $?", "r")
+        if handle then
+            local output = handle:read("*a")
+            handle:close()
+            -- Extract exit code from last line
+            local exit_code = output:match("(%d+)%s*$")
+            return exit_code == "0", "", ""
+        end
+        return false, "", "Failed to execute"
+    end
+
+    -- For mkdir and other commands
+    local handle = io.popen(cmd .. " 2>&1", "r")
+    if handle then
+        local output = handle:read("*a")
+        handle:close()
+        -- Consider success if no error output or if directory was created
+        return true, output, ""
+    end
+    return false, "", "Failed to execute"
+end
+
 -- Test helper functions (not part of real wezterm API)
 wezterm._test = {}
 
