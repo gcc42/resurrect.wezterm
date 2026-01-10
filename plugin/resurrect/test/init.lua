@@ -8,7 +8,16 @@ local script_dir = debug.getinfo(1, "S").source:match("@(.*/)")
 -- 1. lib/?.lua - lust test framework
 -- 2. ../../?.lua - for require("resurrect.utils") pattern (plugin/resurrect/utils.lua)
 -- 3. ../?.lua - for direct require("utils") pattern if needed
-package.path = script_dir .. "lib/?.lua;" .. script_dir .. "../../?.lua;" .. script_dir .. "../?.lua;" .. package.path
+-- 4. fakes/?.lua - for test fakes
+-- 5. fixtures/?.lua - for test fixtures
+-- 6. ?.lua - for local test modules
+package.path = script_dir .. "lib/?.lua;"
+    .. script_dir .. "../../?.lua;"
+    .. script_dir .. "../?.lua;"
+    .. script_dir .. "fakes/?.lua;"
+    .. script_dir .. "fixtures/?.lua;"
+    .. script_dir .. "?.lua;"
+    .. package.path
 
 -- Load lust test framework
 local lust = require("lust")
@@ -37,19 +46,30 @@ local function run_tests()
     print("\n" .. string.char(27) .. "[36mResurrect.wezterm Test Suite" .. string.char(27) .. "[0m")
     print(string.rep("=", 50))
 
-    -- Find test files (test_*.lua) in this directory
+    -- Find test files (test_*.lua and spec/*_spec.lua) in this directory
     local test_files = {}
-    local handle = io.popen('ls "' .. script_dir .. '"test_*.lua 2>/dev/null')
-    if handle then
-        for file in handle:lines() do
-            test_files[#test_files + 1] = file
-        end
-        handle:close()
-    end
 
-    -- Also check command line args for specific test files
+    -- Check command line args first for specific test files
     if #arg > 0 then
         test_files = arg
+    else
+        -- Find test_*.lua files
+        local handle = io.popen('ls "' .. script_dir .. '"test_*.lua 2>/dev/null')
+        if handle then
+            for file in handle:lines() do
+                test_files[#test_files + 1] = file
+            end
+            handle:close()
+        end
+
+        -- Find spec/*_spec.lua files
+        handle = io.popen('ls "' .. script_dir .. 'spec/"*_spec.lua 2>/dev/null')
+        if handle then
+            for file in handle:lines() do
+                test_files[#test_files + 1] = file
+            end
+            handle:close()
+        end
     end
 
     -- Run each test file
