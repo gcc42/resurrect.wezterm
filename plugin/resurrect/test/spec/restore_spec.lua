@@ -98,6 +98,37 @@ describe("State Restore", function()
 				local windows = mux.all_windows()
 				expect(#windows).to.be.truthy()
 			end)
+
+			it("renames workspace to saved name", function()
+				local state = {
+					workspace = "my-restored-workspace",
+					window_states = {
+						{
+							title = "main",
+							tabs = {
+								{
+									title = "tab",
+									is_active = true,
+									pane_tree = {
+										cwd = "/project",
+										width = 160,
+										height = 48,
+										left = 0,
+										top = 0,
+										is_active = true,
+									},
+								},
+							},
+							size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+						},
+					},
+				}
+
+				workspace_state_mod.restore_workspace(state, {})
+
+				-- Verify workspace was renamed (not spawn_in_workspace mode)
+				expect(mux.get_active_workspace()).to.equal("my-restored-workspace")
+			end)
 		end)
 
 		describe("error handling", function()
