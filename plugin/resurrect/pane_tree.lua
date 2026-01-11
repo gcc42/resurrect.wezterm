@@ -75,6 +75,13 @@ local function insert_panes(root, panes)
 		return nil
 	end
 
+	-- Guard against processing the same pane twice (can happen in grid layouts
+	-- where a pane is both right-of and below the root, causing it to appear
+	-- in multiple recursive paths)
+	if root.pane == nil then
+		return nil
+	end
+
 	local domain = root.pane:get_domain_name()
 	if not wezterm.mux.get_domain(domain):is_spawnable() then
 		wezterm.log_warn("Domain " .. domain .. " is not spawnable")

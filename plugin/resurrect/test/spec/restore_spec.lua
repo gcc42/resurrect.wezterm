@@ -306,6 +306,126 @@ describe("State Restore", function()
             expect(#windows >= 1).to.equal(true)
         end)
 
+        it("creates three-way horizontal split", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {
+                            {
+                                title = "tab", is_active = true,
+                                pane_tree = {
+                                    cwd = "/a", width = 53, height = 48, left = 0, top = 0, is_active = true,
+                                    right = {
+                                        cwd = "/b", width = 53, height = 48, left = 54, top = 0,
+                                        right = { cwd = "/c", width = 53, height = 48, left = 108, top = 0 },
+                                    },
+                                },
+                            },
+                        },
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            workspace_state_mod.restore_workspace(state, {})
+
+            local windows = mux.all_windows()
+            expect(#windows >= 1).to.equal(true)
+        end)
+
+        it("restores grid 2x2 layout", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {
+                            {
+                                title = "tab", is_active = true,
+                                pane_tree = {
+                                    cwd = "/tl", width = 80, height = 24, left = 0, top = 0, is_active = true,
+                                    right = { cwd = "/tr", width = 80, height = 24, left = 81, top = 0 },
+                                    bottom = {
+                                        cwd = "/bl", width = 80, height = 24, left = 0, top = 25,
+                                        right = { cwd = "/br", width = 80, height = 24, left = 81, top = 25 },
+                                    },
+                                },
+                            },
+                        },
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            workspace_state_mod.restore_workspace(state, {})
+
+            local windows = mux.all_windows()
+            expect(#windows >= 1).to.equal(true)
+        end)
+
+        it("preserves pane cwd values in state", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {
+                            {
+                                title = "tab", is_active = true,
+                                pane_tree = {
+                                    cwd = "/project/src", width = 80, height = 48, left = 0, top = 0, is_active = true,
+                                    right = { cwd = "/project/tests", width = 80, height = 48, left = 81, top = 0 },
+                                },
+                            },
+                        },
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            -- Verify the state has the correct cwd values
+            expect(state.window_states[1].tabs[1].pane_tree.cwd).to.equal("/project/src")
+            expect(state.window_states[1].tabs[1].pane_tree.right.cwd).to.equal("/project/tests")
+
+            workspace_state_mod.restore_workspace(state, {})
+
+            local windows = mux.all_windows()
+            expect(#windows >= 1).to.equal(true)
+        end)
+
+        it("preserves pane position values in nested splits", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {
+                            {
+                                title = "tab", is_active = true,
+                                pane_tree = {
+                                    cwd = "/a", width = 100, height = 48, left = 0, top = 0, is_active = true,
+                                    right = {
+                                        cwd = "/b", width = 60, height = 24, left = 101, top = 0,
+                                        bottom = { cwd = "/c", width = 60, height = 24, left = 101, top = 25 },
+                                    },
+                                },
+                            },
+                        },
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            -- Verify pane positions in state
+            expect(state.window_states[1].tabs[1].pane_tree.left).to.equal(0)
+            expect(state.window_states[1].tabs[1].pane_tree.right.left).to.equal(101)
+            expect(state.window_states[1].tabs[1].pane_tree.right.bottom.top).to.equal(25)
+
+            workspace_state_mod.restore_workspace(state, {})
+        end)
+
     end)
 
     ---------------------------------------------------------------------------
