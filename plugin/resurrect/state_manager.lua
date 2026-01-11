@@ -1,60 +1,30 @@
 ---@type Wezterm
 local wezterm = require("wezterm")
-local file_io = require("resurrect.file_io")
-local utils = require("resurrect.utils")
 local core = require("resurrect.core.pane_tree")
+local shell_io = require("resurrect.shell.io")
 
 local pub = {}
 
 -- Re-export sanitize_filename from core (for backward compatibility)
 pub.sanitize_filename = core.sanitize_filename
 
----@param file_name string
----@param type string
----@param opt_name string?
----@return string
-local function get_file_path(file_name, type, opt_name)
-	-- Use opt_name if provided, otherwise use file_name
-	local sanitized_name = pub.sanitize_filename(opt_name or file_name)
-	return string.format("%s%s" .. utils.separator .. "%s.json", pub.save_state_dir, type, sanitized_name)
-end
-
 ---save state to a file
+---Delegates to shell/io.save() for workflow orchestration
 ---@param state workspace_state | window_state | tab_state
 ---@param opt_name? string
 function pub.save_state(state, opt_name)
-	-- State type detection: maps state field to (type_name, name_field) pair
-	local state_types = {
-		{ field = "window_states", type = "workspace", name = state.workspace },
-		{ field = "tabs", type = "window", name = state.title },
-		{ field = "pane_tree", type = "tab", name = state.title },
-	}
-	-- Find matching state type and write
-	for _, st in ipairs(state_types) do
-		if state[st.field] then
-			file_io.write_state(get_file_path(st.name, st.type, opt_name), state, st.type)
-			return
-		end
-	end
+	shell_io.save(state, opt_name)
 end
 
 ---Reads a file with the state
+---Delegates to shell/io.load() for workflow orchestration
 ---@param name string
 ---@param type string
 ---@return table
 function pub.load_state(name, type)
-	wezterm.emit("resurrect.state_manager.load_state.start", name, type)
-	local file_path = get_file_path(name, type)
-	local json = file_io.load_json(file_path)
-
-	-- Guard: invalid json returns empty table with error event
-	if not json then
-		wezterm.emit("resurrect.error", "Invalid json: " .. file_path)
-		return {}
-	end
-
-	wezterm.emit("resurrect.state_manager.load_state.finished", name, type)
-	return json
+	local result = shell_io.load(name, type)
+	-- Backward compatibility: return empty table instead of nil on error
+	return result or {}
 end
 
 local save_in_progress = false
@@ -111,31 +81,27 @@ function pub.periodic_save(opts)
 end
 
 ---Writes the current state name and type
+---Delegates to shell/io.write_current_state()
 ---@param name string
 ---@param type string
 ---@return boolean
 ---@return string|nil
 function pub.write_current_state(name, type)
-	local file_path = pub.save_state_dir .. utils.separator .. "current_state"
-	local suc, err = file_io.write_file(file_path, string.format("%s\n%s", name, type))
-	return suc, err
+	return shell_io.write_current_state(name, type)
 end
 
 ---callback for resurrecting workspaces on startup
+---Delegates to shell/io for reading current state
 ---@return boolean
 ---@return string|nil
 function pub.resurrect_on_gui_startup()
-	local file_path = pub.save_state_dir .. utils.separator .. "current_state"
 	local suc, err = pcall(function()
-		local file = io.open(file_path, "r")
-		if not file then
-			error("Could not open file: " .. file_path)
+		local name, state_type = shell_io.read_current_state()
+		if not name or not state_type then
+			error("Could not read current state file")
 		end
-		local name = file:read("*line")
-		local type = file:read("*line")
-		file:close()
-		if type == "workspace" then
-			require("resurrect.workspace_state").restore_workspace(pub.load_state(name, type), {
+		if state_type == "workspace" then
+			require("resurrect.workspace_state").restore_workspace(pub.load_state(name, state_type), {
 				spawn_in_workspace = true,
 				relative = true,
 				restore_text = true,
@@ -147,16 +113,11 @@ function pub.resurrect_on_gui_startup()
 	return suc, err
 end
 
+---Deletes a state file
+---Delegates to shell/io.delete()
 ---@param file_path string
 function pub.delete_state(file_path)
-	wezterm.emit("resurrect.state_manager.delete_state.start", file_path)
-	local path = pub.save_state_dir .. file_path
-	local success = os.remove(path)
-	if not success then
-		wezterm.emit("resurrect.error", "Failed to delete state: " .. path)
-		wezterm.log_error("Failed to delete state: " .. path)
-	end
-	wezterm.emit("resurrect.state_manager.delete_state.finished", file_path)
+	shell_io.delete(file_path)
 end
 
 --- Merges user-supplied options with default options
@@ -166,15 +127,16 @@ function pub.set_encryption(user_opts)
 end
 
 ---Changes the directory to save the state to
+---Delegates to shell/io.change_state_dir() and syncs local save_state_dir
 ---@param directory string
 function pub.change_state_save_dir(directory)
-	local types = { "workspace", "window", "tab" }
-	for _, type in ipairs(types) do
-		utils.ensure_folder_exists(directory .. "/" .. type)
-	end
-	pub.save_state_dir = directory
+	shell_io.change_state_dir(directory)
+	-- Keep local save_state_dir in sync for backward compatibility
+	pub.save_state_dir = shell_io.save_state_dir
 end
 
+---Sets the maximum number of lines to capture from pane scrollback
+---@param max_nlines integer
 function pub.set_max_nlines(max_nlines)
 	require("resurrect.pane_tree").max_nlines = max_nlines
 end

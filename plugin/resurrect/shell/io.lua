@@ -1,8 +1,5 @@
----Shell I/O module: Workflow orchestration for capture/save and load/restore operations.
----This module is the imperative shell that coordinates between:
---- - shell/api.lua (WezTerm data extraction)
---- - core/pane_tree.lua (pure tree building and transforms)
---- - file_io.lua (file operations)
+---Shell I/O module: File I/O operations for state persistence.
+---Handles save/load/delete workflows and directory management.
 ---All event emissions are preserved as they are public API.
 
 ---@type Wezterm
@@ -10,14 +7,12 @@ local wezterm = require("wezterm")
 local file_io = require("resurrect.file_io")
 local utils = require("resurrect.utils")
 local core = require("resurrect.core.pane_tree")
-local shell_api = require("resurrect.shell.api")
 
 ---@class ShellIO
 local M = {}
 
 -- Default configuration (will be set by state_manager.change_state_save_dir)
 M.save_state_dir = wezterm.config_dir .. "/resurrect/"
-M.max_nlines = 3500
 
 --------------------------------------------------------------------------------
 -- State Type Detection
@@ -63,96 +58,6 @@ end
 function M.build_file_path(name, state_type)
 	local sanitized_name = core.sanitize_filename(name)
 	return string.format("%s%s%s%s.json", M.save_state_dir, state_type, utils.separator, sanitized_name)
-end
-
---------------------------------------------------------------------------------
--- Capture Workflows
---------------------------------------------------------------------------------
-
----Capture the current workspace state
----@return WorkspaceState state The captured workspace state
-function M.capture_workspace()
-	local workspace_name = wezterm.mux.get_active_workspace()
-	local window_states = {}
-
-	for _, mux_win in ipairs(wezterm.mux.all_windows()) do
-		if mux_win:get_workspace() == workspace_name then
-			window_states[#window_states + 1] = M.capture_window(mux_win)
-		end
-	end
-
-	---@type WorkspaceState
-	return {
-		workspace = workspace_name,
-		window_states = window_states,
-	}
-end
-
----Capture the state of a mux window
----@param mux_win MuxWindow The mux window to capture
----@return WindowState state The captured window state
-function M.capture_window(mux_win)
-	local tabs = {}
-	local tabs_info = mux_win:tabs_with_info()
-
-	for i, tab_info in ipairs(tabs_info) do
-		local tab_state = M.capture_tab(tab_info.tab)
-		tab_state.is_active = tab_info.is_active
-		tabs[i] = tab_state
-	end
-
-	-- Get size from first tab
-	local size = tabs_info[1] and tabs_info[1].tab:get_size() or nil
-
-	---@type WindowState
-	return {
-		title = mux_win:get_title(),
-		tabs = tabs,
-		size = size,
-	}
-end
-
----Capture the state of a mux tab
----@param mux_tab MuxTab The mux tab to capture
----@return TabState state The captured tab state
-function M.capture_tab(mux_tab)
-	-- Extract raw pane data using shell API
-	local panes_info = mux_tab:panes_with_info()
-	local raw_panes = shell_api.extract_panes(panes_info, M.max_nlines)
-
-	-- Build pane tree using core pure function
-	local pane_tree, warnings = core.build(raw_panes)
-
-	-- Guard: every tab must have at least one pane
-	if not pane_tree then
-		local err_msg = "Tab has no panes: " .. mux_tab:get_title()
-		wezterm.log_error(err_msg)
-		wezterm.emit("resurrect.error", err_msg)
-		error(err_msg)
-	end
-
-	-- Emit warnings for non-spawnable domains
-	for _, warning in ipairs(warnings) do
-		wezterm.log_warn(warning)
-		wezterm.emit("resurrect.error", warning)
-	end
-
-	-- Check if any pane is zoomed
-	local is_zoomed = false
-	for _, pane in ipairs(raw_panes) do
-		if pane.is_zoomed then
-			is_zoomed = true
-			break
-		end
-	end
-
-	---@type TabState
-	return {
-		title = mux_tab:get_title(),
-		is_active = false, -- Set by caller
-		is_zoomed = is_zoomed,
-		pane_tree = pane_tree,
-	}
 end
 
 --------------------------------------------------------------------------------
