@@ -5,7 +5,8 @@ local pub = {}
 
 ---Function used to split panes when mapping over the pane_tree
 ---@param opts restore_opts
----@return fun(acc: {active_pane: Pane, is_zoomed: boolean}, pane_tree: pane_tree): {active_pane: Pane, is_zoomed: boolean}
+---@return fun(acc: {active_pane: Pane, is_zoomed: boolean}, pane_tree: pane_tree):
+---{active_pane: Pane, is_zoomed: boolean}
 local function make_splits(opts)
 	if opts == nil then
 		opts = {}

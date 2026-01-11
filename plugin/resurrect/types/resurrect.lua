@@ -65,4 +65,3 @@
 ---@field is_active boolean
 ---@field is_zoomed boolean
 ---@field alt_screen_active boolean
-
