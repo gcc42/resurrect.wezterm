@@ -3,6 +3,46 @@ local wezterm = require("wezterm")
 local pane_tree_mod = require("resurrect.pane_tree")
 local pub = {}
 
+---Determine if right split happened before bottom split based on geometry.
+---If right pane spans full height (parent + bottom), right was split first.
+---If bottom pane spans full width (parent + right), bottom was split first.
+---@param pane_tree pane_tree
+---@return boolean true if right should be split first
+local function should_split_right_first(pane_tree)
+	local right = pane_tree.right
+	local bottom = pane_tree.bottom
+
+	if not right or not bottom then
+		return right ~= nil
+	end
+
+	local right_spans_full_height = right.height >= (pane_tree.height + bottom.height - 1)
+	return right_spans_full_height
+end
+
+---Execute a split operation
+---@param pane Pane?
+---@param parent pane_tree
+---@param child pane_tree
+---@param direction "Right" | "Bottom"
+---@param opts restore_opts
+local function do_split(pane, parent, child, direction, opts)
+	if not pane then
+		return
+	end
+	local split_args = { direction = direction, cwd = child.cwd }
+	if opts.relative then
+		if direction == "Right" then
+			split_args.size = child.width / (parent.width + child.width)
+		else
+			split_args.size = child.height / (parent.height + child.height)
+		end
+	elseif opts.absolute then
+		split_args.size = direction == "Right" and child.width or child.height
+	end
+	child.pane = pane:split(split_args)
+end
+
 ---Function used to split panes when mapping over the pane_tree
 ---@param opts restore_opts
 ---@return fun(acc: {active_pane: Pane, is_zoomed: boolean}, pane_tree: pane_tree):
@@ -19,28 +59,23 @@ local function make_splits(opts)
 			opts.on_pane_restore(pane_tree)
 		end
 
-		local bottom = pane_tree.bottom
-		if bottom then
-			local split_args = { direction = "Bottom", cwd = bottom.cwd }
-			if opts.relative then
-				split_args.size = bottom.height / (pane_tree.height + bottom.height)
-			elseif opts.absolute then
-				split_args.size = bottom.height
-			end
-
-			bottom.pane = pane:split(split_args)
-		end
-
 		local right = pane_tree.right
-		if right then
-			local split_args = { direction = "Right", cwd = right.cwd }
-			if opts.relative then
-				split_args.size = right.width / (pane_tree.width + right.width)
-			elseif opts.absolute then
-				split_args.size = right.width
-			end
+		local bottom = pane_tree.bottom
 
-			right.pane = pane:split(split_args)
+		if should_split_right_first(pane_tree) then
+			if right then
+				do_split(pane, pane_tree, right, "Right", opts)
+			end
+			if bottom then
+				do_split(pane, pane_tree, bottom, "Bottom", opts)
+			end
+		else
+			if bottom then
+				do_split(pane, pane_tree, bottom, "Bottom", opts)
+			end
+			if right then
+				do_split(pane, pane_tree, right, "Right", opts)
+			end
 		end
 
 		if pane_tree.is_active then
