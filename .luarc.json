@@ -1,10 +1,20 @@
 {
-  "Lua": {
-    "runtime": {
-      "version": "Lua 5.4"
-    },
-    "workspace": {
-      "checkThirdParty": false
-    }
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime": {
+    "version": "Lua 5.4",
+    "path": ["?.lua", "?/init.lua", "plugin/?.lua", "plugin/?/init.lua"]
+  },
+  "workspace": {
+    "library": ["plugin/resurrect/types"],
+    "checkThirdParty": false,
+    "ignoreDir": ["test", "**/test", "**/test/**", "plugin/resurrect/test"]
+  },
+  "diagnostics": {
+    "globals": [],
+    "disable": ["lowercase-global", "need-check-nil"],
+    "ignoredFiles": "Opened"
+  },
+  "type": {
+    "castNumberToInteger": true
   }
 }

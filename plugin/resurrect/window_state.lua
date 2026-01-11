@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 local tab_state_mod = require("resurrect.tab_state")
 local pub = {}
 
@@ -54,6 +55,7 @@ function pub.restore_window(window, window_state, opts)
 
 	local active_tab
 	for i, tab_state in ipairs(window_state.tabs) do
+		---@type MuxTab
 		local tab
 		if i == 1 and opts.tab then
 			tab = opts.tab
@@ -66,10 +68,10 @@ function pub.restore_window(window, window_state, opts)
 		end
 
 		if i == 1 and opts.close_open_tabs then
-			close_all_other_tabs(window, tab)
+			close_all_other_tabs(window, tab --[[@as MuxTab]])
 		end
 
-		tab_state_mod.restore_tab(tab, tab_state, opts)
+		tab_state_mod.restore_tab(tab --[[@as MuxTab]], tab_state, opts)
 		if tab_state.is_active then
 			active_tab = tab
 		end

@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 local file_io = require("resurrect.file_io")
 local utils = require("resurrect.utils")
 
@@ -69,9 +70,10 @@ function pub.load_state(name, type)
 	return json
 end
 
+local save_in_progress = false
+
 ---Saves the state after interval in seconds
 ---@param opts? { interval_seconds: integer?, save_workspaces: boolean?, save_windows: boolean?, save_tabs: boolean? }
-local save_in_progress = false
 function pub.periodic_save(opts)
 	-- Default options with ternary idiom
 	opts = opts or { save_workspaces = true }

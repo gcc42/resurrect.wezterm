@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 local utils = require("resurrect.utils")
 local file_io = require("resurrect.file_io")
 local pub = {}
@@ -311,14 +312,14 @@ local function insert_choices(stdout, opts)
 end
 
 ---A fuzzy finder to restore saved state
----@param window MuxWindow
+---@param window GuiWindow
 ---@param pane Pane
 ---@param callback fun(id: string, label: string, save_state_dir: string)
 ---@param opts fuzzy_load_opts?
 function pub.fuzzy_load(window, pane, callback, opts)
 	wezterm.emit("resurrect.fuzzy_loader.fuzzy_load.start", window, pane)
 
-	opts = utils.tbl_deep_extend("force", pub.default_fuzzy_load_opts, opts or {})
+	opts = utils.tbl_deep_extend("force", pub.default_fuzzy_load_opts, opts or {}) --[[@as fuzzy_load_opts]]
 
 	local folder = require("resurrect.state_manager").save_state_dir
 

@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 local dev = wezterm.plugin.require("https://github.com/chrisgve/dev.wezterm")
 
 local pub = {}
