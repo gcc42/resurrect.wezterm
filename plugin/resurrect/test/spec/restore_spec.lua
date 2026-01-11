@@ -395,6 +395,140 @@ describe("State Restore", function()
 			expect(#windows >= 1).to.equal(true)
 		end)
 
+		-- Regression test for split order bug:
+		-- When a pane has both right and bottom children, the right split must happen
+		-- first to preserve correct geometry. This layout represents:
+		--   +--------+--------+
+		--   | A      |        |
+		--   | (root) |   B    |
+		--   +--------+ (right)|
+		--   | C      |        |
+		--   |(bottom)|        |
+		--   +--------+--------+
+		-- Created by: split right (%), then split left pane down (")
+		-- The right pane B should have FULL height (48), not half height (24).
+		it("preserves split order when pane has both right and bottom children", function()
+			-- Layout: 2 panes in left column, 1 full-height pane on right
+			-- This is created by: split right first, then split left pane down
+			local state = {
+				workspace = "test",
+				window_states = {
+					{
+						title = "win",
+						tabs = {
+							{
+								title = "tab",
+								is_active = true,
+								pane_tree = {
+									cwd = "/left-top",
+									width = 80,
+									height = 24,
+									left = 0,
+									top = 0,
+									is_active = true,
+									-- Right pane has FULL height (48) - split right happened first
+									right = { cwd = "/right", width = 80, height = 48, left = 81, top = 0 },
+									-- Bottom pane only in left column
+									bottom = { cwd = "/left-bottom", width = 80, height = 24, left = 0, top = 25 },
+								},
+							},
+						},
+						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+					},
+				},
+			}
+
+			workspace_state_mod.restore_workspace(state, {})
+
+			-- Get the restored panes and verify geometry
+			local windows = mux.all_windows()
+			expect(#windows >= 1).to.equal(true)
+
+			local tab = windows[#windows]:active_tab()
+			local panes = tab:panes()
+
+			-- Should have 3 panes total
+			expect(#panes).to.equal(3)
+
+			-- Find the right pane (cwd = "/right") and verify it has full height
+			local right_pane = nil
+			for _, pane in ipairs(panes) do
+				local cwd_info = pane:get_current_working_dir()
+				if cwd_info and cwd_info.file_path == "/right" then
+					right_pane = pane
+					break
+				end
+			end
+
+			expect(right_pane).to.exist()
+			-- The right pane should have full height (48), not half height
+			-- If splits are done in wrong order (bottom first), this would be ~24
+			expect(right_pane.height).to.equal(48)
+		end)
+
+		-- Opposite case: bottom split first, then right split on top pane
+		-- Layout:
+		--   +-----+-----+
+		--   | A   |  B  |
+		--   +-----+-----+
+		--   |     C     |
+		--   +-----------+
+		-- Created by: split down (") first, then split top pane right (%)
+		-- The bottom pane C should have FULL width (160), not half width (80).
+		it("preserves split order when bottom was split first", function()
+			local state = {
+				workspace = "test",
+				window_states = {
+					{
+						title = "win",
+						tabs = {
+							{
+								title = "tab",
+								is_active = true,
+								pane_tree = {
+									cwd = "/top-left",
+									width = 80,
+									height = 24,
+									left = 0,
+									top = 0,
+									is_active = true,
+									-- Right pane only in top row (half height)
+									right = { cwd = "/top-right", width = 80, height = 24, left = 81, top = 0 },
+									-- Bottom pane has FULL width (160) - split down happened first
+									bottom = { cwd = "/bottom", width = 160, height = 24, left = 0, top = 25 },
+								},
+							},
+						},
+						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+					},
+				},
+			}
+
+			workspace_state_mod.restore_workspace(state, {})
+
+			local windows = mux.all_windows()
+			expect(#windows >= 1).to.equal(true)
+
+			local tab = windows[#windows]:active_tab()
+			local panes = tab:panes()
+
+			expect(#panes).to.equal(3)
+
+			-- Find the bottom pane and verify it has full width
+			local bottom_pane = nil
+			for _, pane in ipairs(panes) do
+				local cwd_info = pane:get_current_working_dir()
+				if cwd_info and cwd_info.file_path == "/bottom" then
+					bottom_pane = pane
+					break
+				end
+			end
+
+			expect(bottom_pane).to.exist()
+			-- The bottom pane should have full width (160), not half width
+			expect(bottom_pane.width).to.equal(160)
+		end)
+
 		it("restores grid 2x2 layout", function()
 			local state = {
 				workspace = "test",
