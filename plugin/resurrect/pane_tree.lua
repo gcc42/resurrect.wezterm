@@ -1,3 +1,7 @@
+-- Pure pane tree logic - This module contains all pure functions
+-- for building and manipulating pane trees. No I/O logic or Wezterm
+-- API calls here.
+
 ---@type Wezterm
 local wezterm = require("wezterm")
 local core = require("resurrect.core.pane_tree")

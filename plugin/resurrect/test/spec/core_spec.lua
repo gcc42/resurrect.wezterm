@@ -4,7 +4,6 @@
 -- These tests verify the functional core in isolation.
 --
 -- Note: End-to-end layout tests are in capture_spec.lua (full pipeline)
--- Note: sanitize_filename is tested via state_manager in persistence_spec.lua
 
 local core = require("resurrect.core.pane_tree")
 
@@ -173,6 +172,35 @@ describe("Core Pane Tree", function()
 			}
 			local commands = core.plan_splits(tree, {})
 			expect(commands[1].domain).to.equal("SSH:server")
+		end)
+	end)
+
+	---------------------------------------------------------------------------
+	-- sanitize_filename() - pure filename sanitization
+	---------------------------------------------------------------------------
+
+	describe("sanitize_filename", function()
+		it("passes through normal names unchanged", function()
+			expect(core.sanitize_filename("myworkspace")).to.equal("myworkspace")
+		end)
+
+		it("converts path separators to plus", function()
+			expect(core.sanitize_filename("/home/user/project")).to.equal("+home+user+project")
+			expect(core.sanitize_filename("C:\\Users\\foo")).to.equal("C_+Users+foo")
+		end)
+
+		it("sanitizes unsafe characters", function()
+			-- Path traversal
+			expect(core.sanitize_filename("../../../etc"):match("%.%.")).to.equal(nil)
+			-- Windows-invalid chars
+			expect(core.sanitize_filename('file<>:"|?*name'):match('[<>:"|%?%*]')).to.equal(nil)
+			-- Control characters
+			expect(core.sanitize_filename("name\x00\tnull")).to.equal("name__null")
+		end)
+
+		it("returns _unnamed_ for nil or empty input", function()
+			expect(core.sanitize_filename(nil)).to.equal("_unnamed_")
+			expect(core.sanitize_filename("")).to.equal("_unnamed_")
 		end)
 	end)
 end)
