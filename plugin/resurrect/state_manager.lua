@@ -10,14 +10,16 @@ local pub = {}
 ---@param name string? The input string to sanitize
 ---@return string The sanitized filename-safe string
 function pub.sanitize_filename(name)
-	if not name then return "_unnamed_" end
+	if not name then
+		return "_unnamed_"
+	end
 
 	local result = name
-		:gsub("[/\\]", "+")            -- path separators -> + (preserves structure)
-		:gsub("%.%.", "_")             -- .. -> _ (prevent path traversal confusion)
-		:gsub('[<>:"|%?%*]', "_")      -- Windows-invalid chars -> _
-		:gsub("[\x00-\x1f\x7f]", "_")  -- control characters -> _
-		:gsub("[%. ]+$", "")           -- trim trailing dots/spaces (Windows)
+		:gsub("[/\\]", "+") -- path separators -> + (preserves structure)
+		:gsub("%.%.", "_") -- .. -> _ (prevent path traversal confusion)
+		:gsub('[<>:"|%?%*]', "_") -- Windows-invalid chars -> _
+		:gsub("[\x00-\x1f\x7f]", "_") -- control characters -> _
+		:gsub("[%. ]+$", "") -- trim trailing dots/spaces (Windows)
 
 	return result ~= "" and result or "_unnamed_"
 end
@@ -39,8 +41,8 @@ function pub.save_state(state, opt_name)
 	-- State type detection: maps state field to (type_name, name_field) pair
 	local state_types = {
 		{ field = "window_states", type = "workspace", name = state.workspace },
-		{ field = "tabs",          type = "window",    name = state.title },
-		{ field = "pane_tree",     type = "tab",       name = state.title },
+		{ field = "tabs", type = "window", name = state.title },
+		{ field = "pane_tree", type = "tab", name = state.title },
 	}
 	-- Find matching state type and write
 	for _, st in ipairs(state_types) do
@@ -82,7 +84,7 @@ function pub.periodic_save(opts)
 	wezterm.time.call_after(opts.interval_seconds, function()
 		-- Guard: skip if previous save still running (prevents overlap)
 		if save_in_progress then
-			pub.periodic_save(opts)  -- reschedule and check again later
+			pub.periodic_save(opts) -- reschedule and check again later
 			return
 		end
 		save_in_progress = true
@@ -90,7 +92,9 @@ function pub.periodic_save(opts)
 		wezterm.emit("resurrect.state_manager.periodic_save.start", opts)
 
 		-- Helper: check if title is non-empty
-		local function has_title(title) return title and title ~= "" end
+		local function has_title(title)
+			return title and title ~= ""
+		end
 
 		if opts.save_workspaces then
 			pub.save_state(require("resurrect.workspace_state").get_workspace_state())

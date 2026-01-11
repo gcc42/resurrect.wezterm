@@ -16,7 +16,9 @@ utils.separator = utils.is_windows and "\\" or "/"
 ---@return boolean
 function utils.is_windows_path(path)
 	-- Guard: empty or nil path is not a Windows path
-	if not path or path == "" then return false end
+	if not path or path == "" then
+		return false
+	end
 	-- Drive letter (e.g., "C:") or backslash separator indicates Windows
 	return path:match("^%a:") ~= nil or path:find("\\", 1, true) ~= nil
 end
@@ -27,7 +29,9 @@ end
 ---@param to_windows boolean If true, convert to backslashes; if false, convert to forward slashes
 ---@return string The normalized path
 function utils.normalize_path_separators(path, to_windows)
-	if not path or path == "" then return path end
+	if not path or path == "" then
+		return path
+	end
 	-- Ternary: convert to backslash for Windows, forward slash for Unix
 	return to_windows and path:gsub("/", "\\") or path:gsub("\\", "/")
 end
@@ -43,9 +47,11 @@ end
 --- Handles both Windows and Unix paths
 ---@param path string The path to split
 ---@return string[] components Array of path components
----@return string|nil drive_or_root Drive letter (e.g., "C:") for Windows, "/" for Unix absolute paths, or nil for relative paths
+---@return string|nil drive_or_root Drive letter (C:) for Windows, "/" for Unix, or nil
 function utils.path_components(path)
-	if not path or path == "" then return {}, nil end
+	if not path or path == "" then
+		return {}, nil
+	end
 
 	-- Normalize to forward slashes for consistent parsing
 	local normalized = path:gsub("\\", "/")
@@ -58,7 +64,9 @@ function utils.path_components(path)
 	-- Collect non-empty path components
 	local components = {}
 	for component in normalized:gmatch("[^/]+") do
-		if component ~= "" then components[#components + 1] = component end
+		if component ~= "" then
+			components[#components + 1] = component
+		end
 	end
 
 	return components, drive_or_root
@@ -86,7 +94,9 @@ end
 function utils.build_partial_path(components, count, drive_or_root, use_backslash)
 	-- Take first N components and join them
 	local partial = {}
-	for i = 1, math.min(count, #components) do partial[#partial + 1] = components[i] end
+	for i = 1, math.min(count, #components) do
+		partial[#partial + 1] = components[i]
+	end
 	return utils.join_path_components(partial, drive_or_root, use_backslash)
 end
 
@@ -103,7 +113,9 @@ end
 function utils.get_current_window_width()
 	-- Find focused window and return its column width, default to 80
 	for _, window in ipairs(wezterm.gui.gui_windows()) do
-		if window:is_focused() then return window:active_tab():get_size().cols end
+		if window:is_focused() then
+			return window:active_tab():get_size().cols
+		end
 	end
 	return 80
 end
@@ -134,9 +146,13 @@ function utils.execute(cmd)
 	local stdout
 	local suc, err = pcall(function()
 		local handle = io.popen(cmd)
-		if not handle then error("Could not open process: " .. cmd) end
+		if not handle then
+			error("Could not open process: " .. cmd)
+		end
 		stdout = handle:read("*a")
-		if stdout == nil then error("Error running process: " .. cmd) end
+		if stdout == nil then
+			error("Error running process: " .. cmd)
+		end
 		handle:close()
 	end)
 	-- Return (success, stdout) on success, (false, error) on failure
@@ -152,18 +168,23 @@ end
 ---@param path string The path to check
 ---@return boolean exists True if the path exists
 function utils.path_exists(path)
-	if not path or path == "" then return false end
+	if not path or path == "" then
+		return false
+	end
 
 	-- Primary: os.rename to self (fast, no process spawn)
 	local ok, err = os.rename(path, path)
-	if ok then return true end
-	if err and err:find("[Pp]ermission denied") then return true end
+	if ok then
+		return true
+	end
+	if err and err:find("[Pp]ermission denied") then
+		return true
+	end
 
 	-- Fallback using wezterm.run_child_process instead of io.popen
-	local args = utils.is_windows
-		and { "cmd.exe", "/c", "if", "exist", path:gsub("/", "\\"), "(echo Y)" }
+	local args = utils.is_windows and { "cmd.exe", "/c", "if", "exist", path:gsub("/", "\\"), "(echo Y)" }
 		or { "test", "-e", path }
-	local success, stdout, stderr = wezterm.run_child_process(args)
+	local success, stdout, _ = wezterm.run_child_process(args) -- luacheck: ignore 211
 	-- For Unix: success itself indicates existence
 	-- For Windows: check stdout for "Y"
 	if utils.is_windows then
@@ -181,15 +202,19 @@ utils.directory_exists = utils.path_exists
 ---@return boolean success True if created or already exists
 ---@return string|nil error Error message if creation failed
 function utils.create_single_directory(path)
-	if not path or path == "" then return false, "Path is empty" end
-	if utils.path_exists(path) then return true, nil end
+	if not path or path == "" then
+		return false, "Path is empty"
+	end
+	if utils.path_exists(path) then
+		return true, nil
+	end
 
-	local args = utils.is_windows
-		and { "cmd.exe", "/c", "mkdir", path:gsub("/", "\\") }
-		or { "mkdir", path }
+	local args = utils.is_windows and { "cmd.exe", "/c", "mkdir", path:gsub("/", "\\") } or { "mkdir", path }
 
-	local success, stdout, stderr = wezterm.run_child_process(args)
-	if success or utils.path_exists(path) then return true, nil end
+	local success, _, stderr = wezterm.run_child_process(args) -- luacheck: ignore 211
+	if success or utils.path_exists(path) then
+		return true, nil
+	end
 
 	return false, "Failed to create: " .. path .. (stderr and (" - " .. stderr) or "")
 end
@@ -200,8 +225,12 @@ end
 ---@return boolean success True if all directories were created or already exist
 ---@return string|nil error Error message if creation failed
 function utils.ensure_folder_exists(path)
-	if not path or path == "" then return false, "Path is empty or nil" end
-	if utils.path_exists(path) then return true, nil end
+	if not path or path == "" then
+		return false, "Path is empty or nil"
+	end
+	if utils.path_exists(path) then
+		return true, nil
+	end
 
 	local components, drive_or_root = utils.path_components(path)
 	if #components == 0 then
@@ -212,7 +241,9 @@ function utils.ensure_folder_exists(path)
 	for i = 1, #components do
 		local partial = utils.build_partial_path(components, i, drive_or_root, utils.is_windows)
 		local success, err = utils.create_single_directory(partial)
-		if not success then return false, err end
+		if not success then
+			return false, err
+		end
 	end
 
 	return true, nil
@@ -223,9 +254,13 @@ end
 ---@return any copy
 function utils.deepcopy(original)
 	-- Non-tables return as-is; tables are recursively copied
-	if type(original) ~= "table" then return original end
+	if type(original) ~= "table" then
+		return original
+	end
 	local copy = {}
-	for k, v in pairs(original) do copy[k] = utils.deepcopy(v) end
+	for k, v in pairs(original) do
+		copy[k] = utils.deepcopy(v)
+	end
 	return copy
 end
 
@@ -240,7 +275,9 @@ end
 ---@return table|nil
 function utils.tbl_deep_extend(behavior, ...)
 	local tables = { ... }
-	if #tables == 0 then return {} end
+	if #tables == 0 then
+		return {}
+	end
 
 	-- Helper: copy value (deep copy tables, pass-through primitives)
 	local function copy_val(v)
@@ -249,13 +286,21 @@ function utils.tbl_deep_extend(behavior, ...)
 
 	-- Initialize result with first table
 	local result = {}
-	for k, v in pairs(tables[1]) do result[k] = copy_val(v) end
+	for k, v in pairs(tables[1]) do
+		result[k] = copy_val(v)
+	end
 
 	-- Behavior dispatch table for handling key conflicts
 	local conflict_handlers = {
-		error = function(k) error("Key '" .. tostring(k) .. "' exists in multiple tables") end,
-		force = function(_, v) return copy_val(v) end,
-		keep = function(_, _, existing) return existing end,  -- Keep existing value
+		error = function(k)
+			error("Key '" .. tostring(k) .. "' exists in multiple tables")
+		end,
+		force = function(_, v)
+			return copy_val(v)
+		end,
+		keep = function(_, _, existing)
+			return existing
+		end, -- Keep existing value
 	}
 
 	-- Merge remaining tables
@@ -268,7 +313,9 @@ function utils.tbl_deep_extend(behavior, ...)
 				-- Key conflict: dispatch based on behavior
 				local handler = conflict_handlers[behavior]
 				local new_val = handler(k, v, result[k])
-				if new_val ~= nil then result[k] = new_val end
+				if new_val ~= nil then
+					result[k] = new_val
+				end
 			else
 				-- New key: just add it
 				result[k] = copy_val(v)

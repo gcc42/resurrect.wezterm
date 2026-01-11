@@ -5,9 +5,10 @@ local file_io = require("resurrect.file_io")
 local pub = {}
 
 ---@alias fmt_fun fun(label: string): string
----@alias fuzzy_load_opts {title: string, description: string, fuzzy_description: string, is_fuzzy: boolean,
----ignore_workspaces: boolean, ignore_tabs: boolean, ignore_windows: boolean, fmt_window: fmt_fun, fmt_workspace: fmt_fun,
----fmt_tab: fmt_fun, fmt_date: fmt_fun, show_state_with_date: boolean, date_format: string, ignore_screen_width: boolean,
+---@alias fuzzy_load_opts {title: string, description: string, fuzzy_description: string,
+---is_fuzzy: boolean, ignore_workspaces: boolean, ignore_tabs: boolean, ignore_windows: boolean,
+---fmt_window: fmt_fun, fmt_workspace: fmt_fun, fmt_tab: fmt_fun, fmt_date: fmt_fun,
+---show_state_with_date: boolean, date_format: string, ignore_screen_width: boolean,
 ---name_truncature: string, min_filename_size: number}
 
 ---Default fuzzy loading options
@@ -68,14 +69,14 @@ local function find_json_files_recursive(base_path)
 			[[
                 Set fso = CreateObject("Scripting.FileSystemObject")
                 Set outFile = fso.CreateTextFile("%s", True)
-                
+
                 Sub ProcessFolder(folderPath)
                     On Error Resume Next
                     Set folder = fso.GetFolder(folderPath)
                     If Err.Number <> 0 Then
                         Exit Sub
                     End If
-                    
+
                     ' Process files in current folder
                     For Each file in folder.Files
                         If LCase(fso.GetExtensionName(file.Name)) = "json" Then
@@ -83,13 +84,13 @@ local function find_json_files_recursive(base_path)
                             outFile.WriteLine(epoch & " " & file.Path)
                         End If
                     Next
-                    
+
                     ' Process subfolders recursively
                     For Each subFolder in folder.SubFolders
                         ProcessFolder(subFolder.Path)
                     Next
                 End Sub
-                
+
                 ProcessFolder("%s")
                 outFile.Close
             ]],

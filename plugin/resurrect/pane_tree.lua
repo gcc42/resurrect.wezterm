@@ -8,7 +8,10 @@ local pub = {}
 pub.max_nlines = 3500
 
 ---@alias PaneInformation {left: integer, top: integer, height: integer, width: integer, pane: Pane?}
----@alias pane_tree {left: integer, top: integer, height: integer, width: integer, bottom: pane_tree?, right: pane_tree?, text: string, cwd: string, domain?: string, process?: local_process_info?, pane: Pane?, is_active: boolean, is_zoomed: boolean, alt_screen_active: boolean}
+---@alias pane_tree {left: integer, top: integer, height: integer, width: integer,
+---bottom: pane_tree?, right: pane_tree?, text: string, cwd: string, domain?: string,
+---process?: local_process_info?, pane: Pane?, is_active: boolean, is_zoomed: boolean,
+---alt_screen_active: boolean}
 ---@alias local_process_info {name: string, argv: string[], cwd: string, executable: string}
 
 ---compare function returns true if a is more left than b

@@ -27,6 +27,6 @@ describe("sanitize_filename()", function()
 	it("returns _unnamed_ for empty/nil input", function()
 		expect(state_manager.sanitize_filename(nil)).to.equal("_unnamed_")
 		expect(state_manager.sanitize_filename("")).to.equal("_unnamed_")
-		expect(state_manager.sanitize_filename("   ")).to.equal("_unnamed_")  -- whitespace only
+		expect(state_manager.sanitize_filename("   ")).to.equal("_unnamed_") -- whitespace only
 	end)
 end)
