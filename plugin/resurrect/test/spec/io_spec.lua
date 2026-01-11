@@ -13,6 +13,14 @@ local core = require("resurrect.core.pane_tree")
 -- Helper: Find event by name
 --------------------------------------------------------------------------------
 
+---@class EmittedEvent
+---@field name string Event name
+---@field args any[] Event arguments
+
+---Find an event by name in a list of emitted events
+---@param events EmittedEvent[] List of emitted events
+---@param name string Event name to find
+---@return EmittedEvent|nil event The found event, or nil
 local function find_event(events, name)
 	for _, event in ipairs(events) do
 		if event.name == name then
@@ -22,6 +30,10 @@ local function find_event(events, name)
 	return nil
 end
 
+---Check if an event exists in a list of emitted events
+---@param events EmittedEvent[] List of emitted events
+---@param name string Event name to check
+---@return boolean exists True if the event exists
 local function has_event(events, name)
 	return find_event(events, name) ~= nil
 end

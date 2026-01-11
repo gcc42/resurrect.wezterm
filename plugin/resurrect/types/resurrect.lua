@@ -106,7 +106,7 @@
 ---@field capture_window fun(mux_win: MuxWindow): WindowState
 ---@field capture_tab fun(mux_tab: MuxTab): TabState
 ---@field save fun(state: WorkspaceState|WindowState|TabState, opt_name?: string): boolean
----@field load fun(name: string, state_type: StateType): table|nil
+---@field load fun(name: string, state_type: StateType): WorkspaceState|WindowState|TabState|nil
 ---@field delete fun(file_path: string): boolean
 ---@field write_current_state fun(name: string, state_type: StateType): boolean, string|nil
 ---@field read_current_state fun(): string|nil, StateType|nil

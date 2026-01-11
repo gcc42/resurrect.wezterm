@@ -12,6 +12,7 @@ local utils = require("resurrect.utils")
 local core = require("resurrect.core.pane_tree")
 local shell_api = require("resurrect.shell.api")
 
+---@class ShellIO
 local M = {}
 
 -- Default configuration (will be set by state_manager.change_state_save_dir)
@@ -122,6 +123,14 @@ function M.capture_tab(mux_tab)
 	-- Build pane tree using core pure function
 	local pane_tree, warnings = core.build(raw_panes)
 
+	-- Guard: every tab must have at least one pane
+	if not pane_tree then
+		local err_msg = "Tab has no panes: " .. mux_tab:get_title()
+		wezterm.log_error(err_msg)
+		wezterm.emit("resurrect.error", err_msg)
+		error(err_msg)
+	end
+
 	-- Emit warnings for non-spawnable domains
 	for _, warning in ipairs(warnings) do
 		wezterm.log_warn(warning)
@@ -142,7 +151,7 @@ function M.capture_tab(mux_tab)
 		title = mux_tab:get_title(),
 		is_active = false, -- Set by caller
 		is_zoomed = is_zoomed,
-		pane_tree = pane_tree, ---@diagnostic disable-line: assign-type-mismatch
+		pane_tree = pane_tree,
 	}
 end
 
@@ -187,7 +196,7 @@ end
 ---Emits events: resurrect.state_manager.load_state.start, resurrect.state_manager.load_state.finished, resurrect.error
 ---@param name string The name of the state to load
 ---@param state_type StateType The type of state
----@return table|nil state The loaded state, or nil on error
+---@return WorkspaceState|WindowState|TabState|nil state The loaded state, or nil on error
 function M.load(name, state_type)
 	wezterm.emit("resurrect.state_manager.load_state.start", name, state_type)
 
@@ -243,6 +252,14 @@ function M.write_current_state(name, state_type)
 	return file_io.write_file(file_path, content)
 end
 
+---Valid state types for validation
+---@type table<string, boolean>
+local VALID_STATE_TYPES = {
+	workspace = true,
+	window = true,
+	tab = true,
+}
+
 ---Read the current state name and type
 ---@return string|nil name
 ---@return StateType|nil type
@@ -254,9 +271,16 @@ function M.read_current_state()
 	end
 
 	local name = file:read("*line")
-	local state_type = file:read("*line")
+	local state_type_raw = file:read("*line")
 	file:close()
 
+	-- Validate state_type is a valid StateType
+	if not state_type_raw or not VALID_STATE_TYPES[state_type_raw] then
+		return nil, nil
+	end
+
+	---@type StateType
+	local state_type = state_type_raw
 	return name, state_type
 end
 
