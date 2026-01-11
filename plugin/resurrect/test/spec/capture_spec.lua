@@ -539,6 +539,27 @@ describe("State Capture", function()
             expect(found_warning).to.equal(true)
         end)
 
+        it("continues processing after non-spawnable domain", function()
+            mux.set_domain_spawnable("SSH:remote", false)
+
+            local workspace = mux.workspace("test")
+                :window("win")
+                    :tab("tab")
+                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/home", domain = "SSH:remote", is_active = true })
+                :build()
+
+            mux.set_active(workspace)
+
+            local tab = workspace.windows[1]:tabs()[1]
+            local panes_info = tab:panes_with_info()
+
+            -- Should not crash - pane tree is created but domain is not stored (correct behavior)
+            local tree = pane_tree_mod.create_pane_tree(panes_info)
+            expect(tree).to.exist()
+            -- Non-spawnable domains are intentionally not stored in the tree
+            expect(tree.domain).to.equal(nil)
+        end)
+
     end)
 
 end)
