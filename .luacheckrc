@@ -36,6 +36,7 @@ files["**/fakes/*.lua"] = {
     ignore = {
         "311",  -- value assigned is overwritten
         "211",  -- unused variable
+        "122",  -- setting read-only field of global (for io/os interception)
     },
 }
 
