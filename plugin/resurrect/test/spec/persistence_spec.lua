@@ -118,6 +118,11 @@ describe("Persistence", function()
             expect(result).to.equal("+home+user+project+src")
         end)
 
+        it("prevents path traversal attacks", function()
+            local result = state_manager.sanitize_filename("../../../etc/passwd")
+            expect(result:match("%.%.")).to.equal(nil)
+        end)
+
     end)
 
     ---------------------------------------------------------------------------
@@ -341,6 +346,44 @@ describe("Persistence", function()
                 end
             end
             expect(found_error).to.equal(true)
+        end)
+
+        it("returns empty table for invalid JSON", function()
+            fs.mkdir(fs.get_root() .. "/workspace")
+            fs.write(fs.get_root() .. "/workspace" .. "/bad.json", "{{{{")
+
+            local result = state_manager.load_state("bad", "workspace")
+            expect(next(result)).to.equal(nil)
+        end)
+
+        it("loads state with wrong structure gracefully", function()
+            fs.mkdir(fs.get_root() .. "/workspace")
+            fs.write(fs.get_root() .. "/workspace" .. "/wrong.json", '{"foo": "bar", "baz": 123}')
+
+            local result = state_manager.load_state("wrong", "workspace")
+
+            expect(result.foo).to.equal("bar")
+            expect(result.workspace).to.equal(nil)
+        end)
+
+        it("handles empty JSON object", function()
+            fs.mkdir(fs.get_root() .. "/workspace")
+            fs.write(fs.get_root() .. "/workspace" .. "/empty.json", '{}')
+
+            local result = state_manager.load_state("empty", "workspace")
+
+            expect(type(result)).to.equal("table")
+            expect(result.workspace).to.equal(nil)
+        end)
+
+        it("handles JSON array instead of object", function()
+            fs.mkdir(fs.get_root() .. "/workspace")
+            fs.write(fs.get_root() .. "/workspace" .. "/array.json", '[1, 2, 3]')
+
+            local result = state_manager.load_state("array", "workspace")
+
+            expect(type(result)).to.equal("table")
+            expect(result[1]).to.equal(1)
         end)
 
     end)

@@ -649,6 +649,124 @@ describe("State Restore", function()
             expect(fake_pane.sent_text).to_not.exist()
         end)
 
+        it("handles empty text", function()
+            local fake_pane = {
+                injected_text = nil,
+                inject_output = function(self, text) self.injected_text = text end,
+            }
+            local pane_tree = { pane = fake_pane, alt_screen_active = false, text = "" }
+
+            tab_state_mod.default_on_pane_restore(pane_tree)
+
+            expect(fake_pane.injected_text).to.equal("")
+        end)
+
+    end)
+
+    ---------------------------------------------------------------------------
+    -- Malformed Data Tests
+    ---------------------------------------------------------------------------
+
+    describe("malformed data", function()
+
+        it("handles pane tree with missing cwd", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {{ title = "tab", is_active = true, pane_tree = { width = 160, height = 48, left = 0, top = 0, is_active = true } }},
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            local success = pcall(function()
+                workspace_state_mod.restore_workspace(state, {})
+            end)
+            expect(success).to.equal(true)
+        end)
+
+        it("handles pane tree with missing dimensions", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {{ title = "tab", is_active = true, pane_tree = { cwd = "/home", left = 0, top = 0, is_active = true } }},
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            local success = pcall(function()
+                workspace_state_mod.restore_workspace(state, {})
+            end)
+            expect(success).to.equal(true)
+        end)
+
+        it("handles tab state with missing title", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {{ is_active = true, pane_tree = { cwd = "/home", width = 160, height = 48, left = 0, top = 0, is_active = true } }},
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            local success = pcall(function()
+                workspace_state_mod.restore_workspace(state, {})
+            end)
+            expect(success).to.equal(true)
+        end)
+
+        it("handles window state with missing title", function()
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        tabs = {{ title = "tab", is_active = true, pane_tree = { cwd = "/home", width = 160, height = 48, left = 0, top = 0, is_active = true } }},
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            local success = pcall(function()
+                workspace_state_mod.restore_workspace(state, {})
+            end)
+            expect(success).to.equal(true)
+        end)
+
+        it("handles mixed spawnable domains with fallback", function()
+            mux.set_domain_spawnable("SSH:dev", false)
+            mux.set_domain_spawnable("local", true)
+
+            local state = {
+                workspace = "test",
+                window_states = {
+                    {
+                        title = "win",
+                        tabs = {{
+                            title = "tab", is_active = true,
+                            pane_tree = {
+                                cwd = "/local", width = 80, height = 48, left = 0, top = 0, is_active = true, domain = "local",
+                                right = { cwd = "/remote", width = 80, height = 48, left = 81, top = 0, domain = "SSH:dev" },
+                            },
+                        }},
+                        size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
+                    },
+                },
+            }
+
+            local success = pcall(function()
+                workspace_state_mod.restore_workspace(state, {})
+            end)
+            expect(success).to.equal(true)
+        end)
+
     end)
 
 end)
