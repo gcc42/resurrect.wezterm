@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 ---@alias encryption_opts {enable: boolean, method: string, private_key: string?, public_key: string?, encrypt: fun(file_path: string, lines: string), decrypt: fun(file_path: string): string}
 
 local utils = require("resurrect.utils")

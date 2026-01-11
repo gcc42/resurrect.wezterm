@@ -1,4 +1,5 @@
-local wezterm = require("wezterm") --[[@as Wezterm]] --- this type cast invokes the LSP module for Wezterm
+---@type Wezterm
+local wezterm = require("wezterm")
 local utils = require("resurrect.utils")
 
 ---@class pane_tree_module
@@ -6,8 +7,7 @@ local utils = require("resurrect.utils")
 local pub = {}
 pub.max_nlines = 3500
 
----@alias Pane any
----@alias PaneInformation {left: integer, top: integer, height: integer, width: integer}
+---@alias PaneInformation {left: integer, top: integer, height: integer, width: integer, pane: Pane?}
 ---@alias pane_tree {left: integer, top: integer, height: integer, width: integer, bottom: pane_tree?, right: pane_tree?, text: string, cwd: string, domain?: string, process?: local_process_info?, pane: Pane?, is_active: boolean, is_zoomed: boolean, alt_screen_active: boolean}
 ---@alias local_process_info {name: string, argv: string[], cwd: string, executable: string}
 
