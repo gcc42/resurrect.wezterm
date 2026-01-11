@@ -1,263 +1,122 @@
--- Virtual Filesystem Fake for testing
--- Provides in-memory file storage for testing persistence without touching disk
-
+---Virtual filesystem for tests using real temp directory
 local fs = {}
 
---------------------------------------------------------------------------------
--- Internal State
---------------------------------------------------------------------------------
+-- Cross-platform temp directory detection
+local function get_temp_base()
+    return os.getenv("TMPDIR")  -- macOS
+        or os.getenv("TEMP")     -- Windows
+        or os.getenv("TMP")      -- Windows alt
+        or "/tmp"                -- Linux/fallback
+end
 
-local files = {}  -- path -> content
-local directories = {}  -- path -> true (for tracking created directories)
+-- Platform detection
+local is_windows = package.config:sub(1,1) == '\\'
 
---------------------------------------------------------------------------------
--- Core Operations
---------------------------------------------------------------------------------
+-- State
+local test_root = nil
 
---- Write content to a virtual file
----@param path string The file path
----@param content string The content to write
----@return boolean success
+--- Create a unique test directory
+function fs.setup()
+    local base = get_temp_base()
+    test_root = base .. (is_windows and "\\" or "/") .. "resurrect-test-" .. os.time() .. "-" .. math.random(10000)
+
+    if is_windows then
+        os.execute('mkdir "' .. test_root .. '"')
+    else
+        os.execute("mkdir -p '" .. test_root .. "'")
+    end
+
+    return test_root
+end
+
+--- Clean up test directory
+function fs.teardown()
+    if not test_root then return end
+
+    if is_windows then
+        os.execute('rmdir /s /q "' .. test_root .. '" 2>nul')
+    else
+        os.execute("rm -rf '" .. test_root .. "' 2>/dev/null")
+    end
+
+    test_root = nil
+end
+
+--- Get the test root directory
+function fs.get_root()
+    return test_root
+end
+
+--- Ensure a directory exists (creates parent dirs)
+function fs.mkdir(path)
+    if is_windows then
+        os.execute('mkdir "' .. path .. '" 2>nul')
+    else
+        os.execute("mkdir -p '" .. path .. "'")
+    end
+end
+
+--- Write content to a file
 function fs.write(path, content)
-    if not path or path == "" then
-        return false
+    local file = io.open(path, "w")
+    if not file then
+        fs.mkdir(path:match("(.+)[/\\][^/\\]+$"))  -- create parent dir
+        file = io.open(path, "w")
     end
-    files[path] = content
-
-    -- Ensure parent directories exist
-    local parent = path:match("(.+)/[^/]+$") or path:match("(.+)\\[^\\]+$")
-    if parent then
-        fs.mkdir(parent)
-    end
-
+    if not file then return false end
+    file:write(content)
+    file:close()
     return true
 end
 
---- Read content from a virtual file
----@param path string The file path
----@return string|nil content
+--- Read content from a file
 function fs.read(path)
-    return files[path]
+    local file = io.open(path, "r")
+    if not file then return nil end
+    local content = file:read("*a")
+    file:close()
+    return content
 end
 
---- Check if a virtual file exists
----@param path string The file path
----@return boolean exists
+--- Check if path exists
 function fs.exists(path)
-    return files[path] ~= nil or directories[path] ~= nil
-end
-
---- Delete a virtual file
----@param path string The file path
----@return boolean success
-function fs.delete(path)
-    if files[path] then
-        files[path] = nil
+    local file = io.open(path, "r")
+    if file then
+        file:close()
         return true
     end
     return false
 end
 
---- Create a virtual directory
----@param path string The directory path
----@return boolean success
-function fs.mkdir(path)
-    if not path or path == "" then
-        return false
-    end
-    directories[path] = true
-
-    -- Create parent directories recursively
-    local parent = path:match("(.+)/[^/]+$") or path:match("(.+)\\[^\\]+$")
-    if parent and parent ~= path then
-        fs.mkdir(parent)
-    end
-
-    return true
+--- Delete a file
+function fs.delete(path)
+    return os.remove(path)
 end
 
---- List files in a virtual directory
----@param dir string The directory path
----@return string[] paths
+--- List files in directory (returns iterator or table)
 function fs.list(dir)
-    local result = {}
-    local dir_pattern = "^" .. dir:gsub("([%.%-%+%[%]%(%)%$%^%%])", "%%%1")
-
-    for path in pairs(files) do
-        if path:match(dir_pattern) then
-            result[#result + 1] = path
-        end
+    local files = {}
+    local cmd
+    if is_windows then
+        cmd = 'dir /b "' .. dir .. '" 2>nul'
+    else
+        cmd = "ls -1 '" .. dir .. "' 2>/dev/null"
     end
 
-    table.sort(result)
-    return result
-end
-
---- List all files matching a pattern
----@param pattern string Lua pattern to match
----@return string[] paths
-function fs.glob(pattern)
-    local result = {}
-
-    for path in pairs(files) do
-        if path:match(pattern) then
-            result[#result + 1] = path
+    local handle = io.popen(cmd)
+    if handle then
+        for line in handle:lines() do
+            table.insert(files, line)
         end
+        handle:close()
     end
-
-    table.sort(result)
-    return result
+    return files
 end
 
---- Reset all virtual filesystem state
+--- Reset (alias for teardown + setup)
 function fs.reset()
-    files = {}
-    directories = {}
-end
-
---------------------------------------------------------------------------------
--- Inspection Helpers (for test assertions)
---------------------------------------------------------------------------------
-
---- Get all files as a table (path -> content)
----@return table<string, string>
-function fs.all_files()
-    local copy = {}
-    for k, v in pairs(files) do
-        copy[k] = v
-    end
-    return copy
-end
-
---- Get count of stored files
----@return number
-function fs.file_count()
-    local count = 0
-    for _ in pairs(files) do
-        count = count + 1
-    end
-    return count
-end
-
---- Check if directory exists (was created)
----@param path string
----@return boolean
-function fs.dir_exists(path)
-    return directories[path] == true
-end
-
---------------------------------------------------------------------------------
--- Wezterm Integration
---------------------------------------------------------------------------------
-
---- Inject filesystem functions into wezterm fake
---- This patches wezterm to use the virtual filesystem
----@param wezterm_fake table The wezterm fake module
-function fs.inject(wezterm_fake)
-    -- Patch read_dir to use virtual filesystem
-    wezterm_fake.read_dir = function(path)
-        local result = {}
-        local dir_len = #path
-        if not path:match("[/\\]$") then
-            dir_len = dir_len + 1
-        end
-
-        for file_path in pairs(files) do
-            -- Check if file is directly in this directory (not in subdirectory)
-            if file_path:sub(1, #path) == path then
-                local remainder = file_path:sub(dir_len + 1)
-                -- Only include direct children (no further path separators)
-                if not remainder:match("/") and not remainder:match("\\") then
-                    result[#result + 1] = file_path
-                end
-            end
-        end
-
-        return result
-    end
-
-    -- Store original run_child_process
-    local original_run_child_process = wezterm_fake.run_child_process
-
-    -- Patch run_child_process to intercept mkdir commands
-    wezterm_fake.run_child_process = function(args)
-        if args and args[1] == "mkdir" then
-            local path = args[2]
-            if path then
-                fs.mkdir(path)
-                return true, "", ""
-            end
-        end
-        -- Fall through to original for other commands
-        if original_run_child_process then
-            return original_run_child_process(args)
-        end
-        return true, "", ""
-    end
-end
-
---- Create a mock file handle for io.open compatibility
----@param path string
----@param mode string
----@return table|nil handle
-function fs.open(path, mode)
-    mode = mode or "r"
-
-    if mode:match("r") then
-        -- Read mode
-        local content = files[path]
-        if not content then
-            return nil
-        end
-        local pos = 1
-        return {
-            read = function(self, fmt)
-                if fmt == "*a" or fmt == "*all" then
-                    local result = content:sub(pos)
-                    pos = #content + 1
-                    return result
-                elseif fmt == "*l" or fmt == "*line" then
-                    local line_end = content:find("\n", pos)
-                    if not line_end then
-                        if pos > #content then return nil end
-                        local result = content:sub(pos)
-                        pos = #content + 1
-                        return result
-                    end
-                    local result = content:sub(pos, line_end - 1)
-                    pos = line_end + 1
-                    return result
-                end
-                return content:sub(pos)
-            end,
-            close = function() end,
-            lines = function(self)
-                return function()
-                    return self:read("*l")
-                end
-            end,
-        }
-    elseif mode:match("w") then
-        -- Write mode
-        local buffer = {}
-        return {
-            write = function(self, ...)
-                for _, v in ipairs({...}) do
-                    buffer[#buffer + 1] = tostring(v)
-                end
-            end,
-            close = function()
-                files[path] = table.concat(buffer)
-                -- Ensure parent directory exists
-                local parent = path:match("(.+)/[^/]+$")
-                if parent then
-                    directories[parent] = true
-                end
-            end,
-        }
-    end
-
-    return nil
+    fs.teardown()
+    return fs.setup()
 end
 
 return fs
