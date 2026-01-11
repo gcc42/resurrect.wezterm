@@ -83,3 +83,15 @@
 ---@field extract_tab fun(mux_tab: MuxTab, max_lines: number): RawTabData
 ---@field extract_window fun(mux_win: MuxWindow, max_lines: number): RawWindowData
 ---@field warn_not_spawnable fun(domain: string): nil
+
+---@class CorePaneTree
+---@field build fun(panes: RawPaneData[]): PaneTree?, string[]
+---@field plan_splits fun(tree: PaneTree, opts: {relative?: boolean, absolute?: boolean}): SplitCommand[]
+---@field sanitize_filename fun(name: string?): string
+---@field map fun(tree: PaneTree?, fn: fun(node: PaneTree): PaneTree): PaneTree?
+---@field fold fun(tree: PaneTree?, acc: any, fn: fun(acc: any, node: PaneTree): any): any
+---@field compare_by_coord fun(a: RawPaneData|PaneTree, b: RawPaneData|PaneTree): boolean
+---@field is_right fun(root: RawPaneData|PaneTree, pane: RawPaneData|PaneTree): boolean
+---@field is_bottom fun(root: RawPaneData|PaneTree, pane: RawPaneData|PaneTree): boolean
+---@field pop_connected_bottom fun(root: PaneTree, panes: RawPaneData[]): RawPaneData?
+---@field pop_connected_right fun(root: PaneTree, panes: RawPaneData[]): RawPaneData?

@@ -2,27 +2,12 @@
 local wezterm = require("wezterm")
 local file_io = require("resurrect.file_io")
 local utils = require("resurrect.utils")
+local core = require("resurrect.core.pane_tree")
 
 local pub = {}
 
---- Sanitizes a string to be safe for use as a filename on all platforms.
---- Pure function: no side effects, deterministic output.
----@param name string? The input string to sanitize
----@return string The sanitized filename-safe string
-function pub.sanitize_filename(name)
-	if not name then
-		return "_unnamed_"
-	end
-
-	local result = name
-		:gsub("[/\\]", "+") -- path separators -> + (preserves structure)
-		:gsub("%.%.", "_") -- .. -> _ (prevent path traversal confusion)
-		:gsub('[<>:"|%?%*]', "_") -- Windows-invalid chars -> _
-		:gsub("[\x00-\x1f\x7f]", "_") -- control characters -> _
-		:gsub("[%. ]+$", "") -- trim trailing dots/spaces (Windows)
-
-	return result ~= "" and result or "_unnamed_"
-end
+-- Re-export sanitize_filename from core (for backward compatibility)
+pub.sanitize_filename = core.sanitize_filename
 
 ---@param file_name string
 ---@param type string
