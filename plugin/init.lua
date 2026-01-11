@@ -1,6 +1,5 @@
 ---@type Wezterm
 local wezterm = require("wezterm")
-local dev = wezterm.plugin.require("https://github.com/chrisgve/dev.wezterm")
 
 local pub = {}
 
@@ -9,14 +8,12 @@ local is_windows = wezterm.target_triple == "x86_64-pc-windows-msvc"
 local separator = is_windows and "\\" or "/"
 
 local function init()
-	-- enable_sub_modules()
-	local opts = {
-		auto = true,
-		keywords = { "github", "gcc42", "resurrect", "wezterm" },
-	}
-	local plugin_path = dev.setup(opts)
+	-- Plugin is at wezterm.config_dir/plugins/resurrect
+	local plugin_dir = wezterm.config_dir .. separator .. "plugins" .. separator .. "resurrect"
 
-	require("resurrect.state_manager").change_state_save_dir(plugin_path .. separator .. "state" .. separator)
+	-- Add plugin directory to package.path for submodule requires
+	local plugin_lua_path = plugin_dir .. separator .. "plugin" .. separator .. "?.lua"
+	package.path = plugin_lua_path .. ";" .. package.path
 
 	-- Export submodules
 	pub.workspace_state = require("resurrect.workspace_state")
