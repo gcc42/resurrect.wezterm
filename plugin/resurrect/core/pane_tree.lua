@@ -1,6 +1,3 @@
--- Pure pane tree logic - NO wezterm require allowed!
--- This module contains all pure functions for building and manipulating pane trees.
-
 ---@class CorePaneTree
 ---@field build fun(panes: RawPaneData[]): PaneTree?, string[]
 ---@field plan_splits fun(tree: PaneTree, opts: {relative?: boolean, absolute?: boolean}): SplitCommand[]
