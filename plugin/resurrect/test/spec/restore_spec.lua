@@ -37,24 +37,11 @@ describe("State Restore", function()
                             title = "main",
                             tabs = {
                                 {
-                                    title = "tab",
-                                    is_active = true,
-                                    pane_tree = {
-                                        cwd = "/project",
-                                        width = 160,
-                                        height = 48,
-                                        left = 0,
-                                        top = 0,
-                                        is_active = true,
-                                    },
+                                    title = "tab", is_active = true,
+                                    pane_tree = { cwd = "/project", width = 160, height = 48, left = 0, top = 0, is_active = true },
                                 },
                             },
-                            size = {
-                                cols = 160,
-                                rows = 48,
-                                pixel_width = 1600,
-                                pixel_height = 960,
-                            },
+                            size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
                         },
                     },
                 }
@@ -83,24 +70,11 @@ describe("State Restore", function()
                             title = "main",
                             tabs = {
                                 {
-                                    title = "tab",
-                                    is_active = true,
-                                    pane_tree = {
-                                        cwd = "/my/project",
-                                        width = 160,
-                                        height = 48,
-                                        left = 0,
-                                        top = 0,
-                                        is_active = true,
-                                    },
+                                    title = "tab", is_active = true,
+                                    pane_tree = { cwd = "/my/project", width = 160, height = 48, left = 0, top = 0, is_active = true },
                                 },
                             },
-                            size = {
-                                cols = 160,
-                                rows = 48,
-                                pixel_width = 1600,
-                                pixel_height = 960,
-                            },
+                            size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
                         },
                     },
                 }
@@ -216,16 +190,8 @@ describe("State Restore", function()
                             title = "Window 1",
                             tabs = {
                                 {
-                                    title = "tab1",
-                                    is_active = true,
-                                    pane_tree = {
-                                        cwd = "/project1",
-                                        width = 160,
-                                        height = 48,
-                                        left = 0,
-                                        top = 0,
-                                        is_active = true,
-                                    },
+                                    title = "tab1", is_active = true,
+                                    pane_tree = { cwd = "/project1", width = 160, height = 48, left = 0, top = 0, is_active = true },
                                 },
                             },
                             size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
@@ -234,16 +200,8 @@ describe("State Restore", function()
                             title = "Window 2",
                             tabs = {
                                 {
-                                    title = "tab2",
-                                    is_active = true,
-                                    pane_tree = {
-                                        cwd = "/project2",
-                                        width = 160,
-                                        height = 48,
-                                        left = 0,
-                                        top = 0,
-                                        is_active = true,
-                                    },
+                                    title = "tab2", is_active = true,
+                                    pane_tree = { cwd = "/project2", width = 160, height = 48, left = 0, top = 0, is_active = true },
                                 },
                             },
                             size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
@@ -274,22 +232,10 @@ describe("State Restore", function()
                         title = "win",
                         tabs = {
                             {
-                                title = "tab",
-                                is_active = true,
+                                title = "tab", is_active = true,
                                 pane_tree = {
-                                    cwd = "/left",
-                                    width = 80,
-                                    height = 48,
-                                    left = 0,
-                                    top = 0,
-                                    is_active = true,
-                                    right = {
-                                        cwd = "/right",
-                                        width = 80,
-                                        height = 48,
-                                        left = 81,
-                                        top = 0,
-                                    },
+                                    cwd = "/left", width = 80, height = 48, left = 0, top = 0, is_active = true,
+                                    right = { cwd = "/right", width = 80, height = 48, left = 81, top = 0 },
                                 },
                             },
                         },
@@ -313,22 +259,10 @@ describe("State Restore", function()
                         title = "win",
                         tabs = {
                             {
-                                title = "tab",
-                                is_active = true,
+                                title = "tab", is_active = true,
                                 pane_tree = {
-                                    cwd = "/top",
-                                    width = 160,
-                                    height = 24,
-                                    left = 0,
-                                    top = 0,
-                                    is_active = true,
-                                    bottom = {
-                                        cwd = "/bottom",
-                                        width = 160,
-                                        height = 24,
-                                        left = 0,
-                                        top = 25,
-                                    },
+                                    cwd = "/top", width = 160, height = 24, left = 0, top = 0, is_active = true,
+                                    bottom = { cwd = "/bottom", width = 160, height = 24, left = 0, top = 25 },
                                 },
                             },
                         },
@@ -351,28 +285,12 @@ describe("State Restore", function()
                         title = "win",
                         tabs = {
                             {
-                                title = "tab",
-                                is_active = true,
+                                title = "tab", is_active = true,
                                 pane_tree = {
-                                    cwd = "/editor",
-                                    width = 100,
-                                    height = 48,
-                                    left = 0,
-                                    top = 0,
-                                    is_active = true,
+                                    cwd = "/editor", width = 100, height = 48, left = 0, top = 0, is_active = true,
                                     right = {
-                                        cwd = "/terminal",
-                                        width = 60,
-                                        height = 24,
-                                        left = 101,
-                                        top = 0,
-                                        bottom = {
-                                            cwd = "/output",
-                                            width = 60,
-                                            height = 24,
-                                            left = 101,
-                                            top = 25,
-                                        },
+                                        cwd = "/terminal", width = 60, height = 24, left = 101, top = 0,
+                                        bottom = { cwd = "/output", width = 60, height = 24, left = 101, top = 25 },
                                     },
                                 },
                             },
@@ -404,16 +322,8 @@ describe("State Restore", function()
                         title = "win",
                         tabs = {
                             {
-                                title = "My Custom Tab",
-                                is_active = true,
-                                pane_tree = {
-                                    cwd = "/home",
-                                    width = 160,
-                                    height = 48,
-                                    left = 0,
-                                    top = 0,
-                                    is_active = true,
-                                },
+                                title = "My Custom Tab", is_active = true,
+                                pane_tree = { cwd = "/home", width = 160, height = 48, left = 0, top = 0, is_active = true },
                             },
                         },
                         size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
@@ -506,20 +416,8 @@ describe("State Restore", function()
                             {
                                 title = "tab",
                                 pane_tree = {
-                                    cwd = "/a",
-                                    width = 80,
-                                    height = 48,
-                                    left = 0,
-                                    top = 0,
-                                    is_active = false,
-                                    right = {
-                                        cwd = "/b",
-                                        width = 80,
-                                        height = 48,
-                                        left = 81,
-                                        top = 0,
-                                        is_active = true,
-                                    },
+                                    cwd = "/a", width = 80, height = 48, left = 0, top = 0, is_active = false,
+                                    right = { cwd = "/b", width = 80, height = 48, left = 81, top = 0, is_active = true },
                                 },
                             },
                         },
@@ -585,19 +483,11 @@ describe("State Restore", function()
         it("injects text for normal panes", function()
             local fake_pane = {
                 injected_text = nil,
-                inject_output = function(self, text)
-                    self.injected_text = text
-                end,
-                send_text = function(self, text)
-                    self.sent_text = text
-                end,
+                inject_output = function(self, text) self.injected_text = text end,
+                send_text = function(self, text) self.sent_text = text end,
             }
 
-            local pane_tree = {
-                pane = fake_pane,
-                text = "$ ls\nfile.txt\n$ ",
-                alt_screen_active = false,
-            }
+            local pane_tree = { pane = fake_pane, text = "$ ls\nfile.txt\n$ ", alt_screen_active = false }
 
             tab_state_mod.default_on_pane_restore(pane_tree)
 
@@ -608,23 +498,14 @@ describe("State Restore", function()
         it("sends command for alt screen panes", function()
             local fake_pane = {
                 injected_text = nil,
-                inject_output = function(self, text)
-                    self.injected_text = text
-                end,
-                send_text = function(self, text)
-                    self.sent_text = text
-                end,
+                inject_output = function(self, text) self.injected_text = text end,
+                send_text = function(self, text) self.sent_text = text end,
             }
 
             local pane_tree = {
                 pane = fake_pane,
                 alt_screen_active = true,
-                process = {
-                    name = "vim",
-                    argv = { "vim", "file.txt" },
-                    cwd = "/project",
-                    executable = "/usr/bin/vim",
-                },
+                process = { name = "vim", argv = { "vim", "file.txt" }, cwd = "/project", executable = "/usr/bin/vim" },
             }
 
             tab_state_mod.default_on_pane_restore(pane_tree)
@@ -636,19 +517,11 @@ describe("State Restore", function()
         it("does nothing for panes without text or process", function()
             local fake_pane = {
                 injected_text = nil,
-                inject_output = function(self, text)
-                    self.injected_text = text
-                end,
-                send_text = function(self, text)
-                    self.sent_text = text
-                end,
+                inject_output = function(self, text) self.injected_text = text end,
+                send_text = function(self, text) self.sent_text = text end,
             }
 
-            local pane_tree = {
-                pane = fake_pane,
-                alt_screen_active = false,
-                text = nil,
-            }
+            local pane_tree = { pane = fake_pane, alt_screen_active = false, text = nil }
 
             tab_state_mod.default_on_pane_restore(pane_tree)
 

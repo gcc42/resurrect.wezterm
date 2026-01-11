@@ -254,10 +254,8 @@ describe("State Capture", function()
         it("captures all tabs", function()
             local workspace = mux.workspace("test")
                 :window("win")
-                    :tab("Tab 1")
-                        :pane(fixtures.single_pane.panes[1])
-                    :tab("Tab 2")
-                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
+                    :tab("Tab 1"):pane(fixtures.single_pane.panes[1])
+                    :tab("Tab 2"):pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
                 :build()
 
             mux.set_active(workspace)
@@ -290,10 +288,8 @@ describe("State Capture", function()
         it("marks active tab", function()
             local workspace = mux.workspace("test")
                 :window("win")
-                    :tab("Tab 1")
-                        :pane(fixtures.single_pane.panes[1])
-                    :tab("Tab 2")
-                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other", is_active = true })
+                    :tab("Tab 1"):pane(fixtures.single_pane.panes[1])
+                    :tab("Tab 2"):pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other", is_active = true })
                 :build()
 
             mux.set_active(workspace)
@@ -336,12 +332,8 @@ describe("State Capture", function()
 
         it("captures all windows in workspace", function()
             local workspace = mux.workspace("test")
-                :window("Window 1")
-                    :tab("tab")
-                        :pane(fixtures.single_pane.panes[1])
-                :window("Window 2")
-                    :tab("tab")
-                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
+                :window("Window 1"):tab("tab"):pane(fixtures.single_pane.panes[1])
+                :window("Window 2"):tab("tab"):pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
                 :build()
 
             mux.set_active(workspace)
@@ -354,18 +346,14 @@ describe("State Capture", function()
         it("only captures windows from active workspace", function()
             -- Create first workspace
             local workspace1 = mux.workspace("workspace1")
-                :window("Win1")
-                    :tab("tab")
-                        :pane(fixtures.single_pane.panes[1])
+                :window("Win1"):tab("tab"):pane(fixtures.single_pane.panes[1])
                 :build()
 
             mux.set_active(workspace1)
 
             -- Create second workspace (different name means different workspace)
             local workspace2 = mux.workspace("workspace2")
-                :window("Win2")
-                    :tab("tab")
-                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
+                :window("Win2"):tab("tab"):pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/other" })
                 :build()
 
             -- Don't set workspace2 as active, just add windows
@@ -420,15 +408,7 @@ describe("State Capture", function()
             local workspace = mux.workspace("test")
                 :window("win")
                     :tab("tab")
-                        :pane({
-                            left = 0,
-                            top = 0,
-                            width = 160,
-                            height = 48,
-                            cwd = "/home",
-                            domain = "local",
-                            is_active = true,
-                        })
+                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/home", domain = "local", is_active = true })
                 :build()
 
             mux.set_active(workspace)
@@ -446,15 +426,7 @@ describe("State Capture", function()
             local workspace = mux.workspace("test")
                 :window("win")
                     :tab("tab")
-                        :pane({
-                            left = 0,
-                            top = 0,
-                            width = 160,
-                            height = 48,
-                            cwd = "/remote",
-                            domain = "SSH:dead",
-                            is_active = true,
-                        })
+                        :pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/remote", domain = "SSH:dead", is_active = true })
                 :build()
 
             mux.set_active(workspace)

@@ -131,11 +131,7 @@ function FakePane:get_foreground_process_info()
 end
 
 function FakePane:get_dimensions()
-    return {
-        scrollback_rows = #self.text,
-        cols = self.width,
-        rows = self.height,
-    }
+    return { scrollback_rows = #self.text, cols = self.width, rows = self.height }
 end
 
 -- Split creates a new pane and tracks it
@@ -251,13 +247,8 @@ function FakeTab:panes_with_info()
     local result = {}
     for _, pane in ipairs(self._panes) do
         result[#result + 1] = {
-            pane = pane,
-            is_active = pane == self._active_pane or pane.is_active,
-            is_zoomed = pane.is_zoomed,
-            left = pane.left,
-            top = pane.top,
-            width = pane.width,
-            height = pane.height,
+            pane = pane, is_active = pane == self._active_pane or pane.is_active, is_zoomed = pane.is_zoomed,
+            left = pane.left, top = pane.top, width = pane.width, height = pane.height,
         }
     end
     return result
@@ -274,12 +265,7 @@ function FakeTab:get_size()
         max_width = math.max(max_width, p.left + p.width)
         max_height = math.max(max_height, p.top + p.height)
     end
-    return {
-        cols = max_width,
-        rows = max_height,
-        pixel_width = max_width * 10,
-        pixel_height = max_height * 20,
-    }
+    return { cols = max_width, rows = max_height, pixel_width = max_width * 10, pixel_height = max_height * 20 }
 end
 
 function FakeTab:window()
@@ -359,10 +345,7 @@ end
 function FakeWindow:tabs_with_info()
     local result = {}
     for _, tab in ipairs(self._tabs) do
-        result[#result + 1] = {
-            tab = tab,
-            is_active = tab == self._active_tab,
-        }
+        result[#result + 1] = { tab = tab, is_active = tab == self._active_tab }
     end
     return result
 end
