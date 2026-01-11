@@ -2,6 +2,7 @@
 local wezterm = require("wezterm")
 local utils = require("resurrect.utils")
 local file_io = require("resurrect.file_io")
+local shell_io = require("resurrect.shell.io")
 local pub = {}
 
 ---@alias fmt_fun fun(label: string): string
@@ -322,7 +323,7 @@ function pub.fuzzy_load(window, pane, callback, opts)
 
 	opts = utils.tbl_deep_extend("force", pub.default_fuzzy_load_opts, opts or {}) --[[@as fuzzy_load_opts]]
 
-	local folder = require("resurrect.state_manager").save_state_dir
+	local folder = shell_io.save_state_dir
 
 	-- Always use the recursive search function
 	local stdout = find_json_files_recursive(folder)
@@ -339,7 +340,7 @@ function pub.fuzzy_load(window, pane, callback, opts)
 		wezterm.action.InputSelector({
 			action = wezterm.action_callback(function(_, _, id, label)
 				if id and label then
-					callback(id, label, require("resurrect.state_manager").save_state_dir)
+					callback(id, label, shell_io.save_state_dir)
 				end
 				wezterm.emit("resurrect.fuzzy_loader.fuzzy_load.finished", window, pane)
 			end),
