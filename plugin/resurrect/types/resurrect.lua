@@ -100,11 +100,7 @@
 
 ---@class ShellIO
 ---@field save_state_dir string Directory where state files are saved
----@field max_nlines number Maximum lines to capture from pane scrollback
 ---@field build_file_path fun(name: string, state_type: StateType): string
----@field capture_workspace fun(): WorkspaceState
----@field capture_window fun(mux_win: MuxWindow): WindowState
----@field capture_tab fun(mux_tab: MuxTab): TabState
 ---@field save fun(state: WorkspaceState|WindowState|TabState, opt_name?: string): boolean
 ---@field load fun(name: string, state_type: StateType): WorkspaceState|WindowState|TabState|nil
 ---@field delete fun(file_path: string): boolean

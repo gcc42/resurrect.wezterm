@@ -1,13 +1,15 @@
 -- Tests for shell/io.lua
--- Verifies workflow orchestration, capture, save, load, and delete operations
+-- Verifies file I/O operations: save, load, delete, and directory management
 
 local mux = require("mux")
 local fixtures = require("pane_layouts")
 local fs = require("fs")
 
--- Import module under test
+-- Import modules under test
 local shell_io = require("resurrect.shell.io")
-local core = require("resurrect.core.pane_tree")
+local workspace_state_mod = require("resurrect.workspace_state")
+local window_state_mod = require("resurrect.window_state")
+local tab_state_mod = require("resurrect.tab_state")
 
 --------------------------------------------------------------------------------
 -- Helper: Find event by name
@@ -91,174 +93,6 @@ describe("Shell IO", function()
 	end)
 
 	---------------------------------------------------------------------------
-	-- Capture Workflow Tests
-	---------------------------------------------------------------------------
-
-	describe("capture_workspace", function()
-		it("captures current workspace with single window", function()
-			local workspace = mux.workspace("capture-test")
-				:window("main")
-				:tab("dev")
-				:pane({
-					left = 0,
-					top = 0,
-					width = 160,
-					height = 48,
-					cwd = "/project",
-					is_active = true,
-				})
-				:build()
-			mux.set_active(workspace)
-
-			local state = shell_io.capture_workspace()
-
-			expect(state.workspace).to.equal("capture-test")
-			expect(#state.window_states).to.equal(1)
-			expect(state.window_states[1].title).to.equal("main")
-		end)
-
-		it("captures workspace with multiple windows", function()
-			local workspace = mux.workspace("multi-win")
-				:window("Window 1")
-				:tab("tab")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/a", is_active = true })
-				:window("Window 2")
-				:tab("tab")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/b", is_active = true })
-				:build()
-			mux.set_active(workspace)
-
-			local state = shell_io.capture_workspace()
-
-			expect(#state.window_states).to.equal(2)
-		end)
-	end)
-
-	describe("capture_window", function()
-		it("captures window with single tab", function()
-			local workspace = mux.workspace("win-test")
-				:window("my-window")
-				:tab("dev")
-				:pane({
-					left = 0,
-					top = 0,
-					width = 160,
-					height = 48,
-					cwd = "/project",
-					is_active = true,
-				})
-				:build()
-			mux.set_active(workspace)
-
-			local mux_win = workspace.windows[1]
-			local state = shell_io.capture_window(mux_win)
-
-			expect(state.title).to.equal("my-window")
-			expect(#state.tabs).to.equal(1)
-			expect(state.tabs[1].title).to.equal("dev")
-		end)
-
-		it("captures window with multiple tabs", function()
-			local workspace = mux.workspace("multi-tab")
-				:window("main")
-				:tab("Tab 1")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/a", is_active = true })
-				:tab("Tab 2")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/b", is_active = true })
-				:tab("Tab 3")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/c", is_active = true })
-				:build()
-			mux.set_active(workspace)
-
-			local mux_win = workspace.windows[1]
-			local state = shell_io.capture_window(mux_win)
-
-			expect(#state.tabs).to.equal(3)
-			expect(state.tabs[1].title).to.equal("Tab 1")
-			expect(state.tabs[2].title).to.equal("Tab 2")
-			expect(state.tabs[3].title).to.equal("Tab 3")
-		end)
-
-		it("tracks active tab info from tabs_with_info", function()
-			local workspace = mux.workspace("active-tab")
-				:window("main")
-				:tab("Tab 1")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/a", is_active = true })
-				:tab("Tab 2")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/b", is_active = true })
-				:build()
-			mux.set_active(workspace)
-
-			local mux_win = workspace.windows[1]
-			local state = shell_io.capture_window(mux_win)
-
-			-- At least one tab should have is_active set
-			-- (mux fake sets first tab as active by default)
-			expect(state.tabs[1].is_active).to.equal(true)
-			expect(state.tabs[2].is_active).to.equal(false)
-		end)
-	end)
-
-	describe("capture_tab", function()
-		it("captures tab with single pane", function()
-			local workspace = mux.workspace("tab-test")
-				:window("main")
-				:tab("my-tab")
-				:pane({
-					left = 0,
-					top = 0,
-					width = 160,
-					height = 48,
-					cwd = "/project",
-					is_active = true,
-				})
-				:build()
-			mux.set_active(workspace)
-
-			local mux_tab = workspace.windows[1]:tabs()[1]
-			local state = shell_io.capture_tab(mux_tab)
-
-			expect(state.title).to.equal("my-tab")
-			expect(state.pane_tree).to.exist()
-			expect(state.pane_tree.cwd).to.equal("/project")
-		end)
-
-		it("captures tab with horizontal split", function()
-			local workspace = mux.workspace("hsplit")
-				:window("main")
-				:tab("split-tab")
-				:pane(fixtures.hsplit.panes[1])
-				:hsplit(fixtures.hsplit.panes[2])
-				:build()
-			mux.set_active(workspace)
-
-			local mux_tab = workspace.windows[1]:tabs()[1]
-			local state = shell_io.capture_tab(mux_tab)
-
-			expect(state.pane_tree).to.exist()
-			expect(state.pane_tree.right).to.exist()
-		end)
-
-		it("captures tab with complex layout", function()
-			local workspace = mux.workspace("ide-layout")
-				:window("main")
-				:tab("ide")
-				:pane(fixtures.ide_layout.panes[1])
-				:hsplit(fixtures.ide_layout.panes[2])
-				:vsplit(fixtures.ide_layout.panes[3])
-				:build()
-			mux.set_active(workspace)
-
-			local mux_tab = workspace.windows[1]:tabs()[1]
-			local state = shell_io.capture_tab(mux_tab)
-
-			expect(state.pane_tree).to.exist()
-			expect(state.pane_tree.right).to.exist()
-			expect(state.pane_tree.right.bottom).to.exist()
-		end)
-	end)
-
-	---------------------------------------------------------------------------
 	-- Save Workflow Tests
 	---------------------------------------------------------------------------
 
@@ -271,7 +105,7 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			local state = shell_io.capture_workspace()
+			local state = workspace_state_mod.get_workspace_state()
 			local success = shell_io.save(state)
 
 			expect(success).to.equal(true)
@@ -288,7 +122,7 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			local state = shell_io.capture_window(workspace.windows[1])
+			local state = window_state_mod.get_window_state(workspace.windows[1])
 			local success = shell_io.save(state)
 
 			expect(success).to.equal(true)
@@ -305,7 +139,7 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			local state = shell_io.capture_tab(workspace.windows[1]:tabs()[1])
+			local state = tab_state_mod.get_tab_state(workspace.windows[1]:tabs()[1])
 			local success = shell_io.save(state)
 
 			expect(success).to.equal(true)
@@ -322,7 +156,7 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			local state = shell_io.capture_workspace()
+			local state = workspace_state_mod.get_workspace_state()
 			shell_io.save(state, "custom-name")
 
 			local file_path = fs.get_root() .. "/workspace/custom-name.json"
@@ -339,7 +173,7 @@ describe("Shell IO", function()
 
 			wezterm._test.clear_emitted_events()
 
-			local state = shell_io.capture_workspace()
+			local state = workspace_state_mod.get_workspace_state()
 			shell_io.save(state)
 
 			local events = wezterm._test.get_emitted_events()
@@ -493,14 +327,25 @@ describe("Shell IO", function()
 			expect(name).to.equal(nil)
 			expect(state_type).to.equal(nil)
 		end)
+
+		it("returns nil for invalid state type", function()
+			-- Write an invalid state type directly to file
+			local file_path = fs.get_root() .. "/current_state"
+			fs.write(file_path, "my-workspace\ninvalid-type")
+
+			local name, state_type = shell_io.read_current_state()
+
+			expect(name).to.equal(nil)
+			expect(state_type).to.equal(nil)
+		end)
 	end)
 
 	---------------------------------------------------------------------------
-	-- Round-Trip Tests
+	-- Round-Trip Tests (save via shell_io, load via shell_io)
 	---------------------------------------------------------------------------
 
 	describe("round-trip", function()
-		it("preserves workspace state through capture/save/load", function()
+		it("preserves workspace state through save/load", function()
 			local workspace = mux.workspace("roundtrip-test")
 				:window("main")
 				:tab("dev")
@@ -515,8 +360,8 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			-- Capture and save
-			local original = shell_io.capture_workspace()
+			-- Capture using *_state module and save
+			local original = workspace_state_mod.get_workspace_state()
 			shell_io.save(original)
 
 			-- Load back
@@ -538,7 +383,7 @@ describe("Shell IO", function()
 			mux.set_active(workspace)
 
 			-- Capture and save
-			local original = shell_io.capture_workspace()
+			local original = workspace_state_mod.get_workspace_state()
 			shell_io.save(original)
 
 			-- Load back
@@ -568,7 +413,7 @@ describe("Shell IO", function()
 			mux.set_active(workspace)
 
 			-- Capture and save
-			local original = shell_io.capture_workspace()
+			local original = workspace_state_mod.get_workspace_state()
 			shell_io.save(original)
 
 			-- Load back
@@ -599,7 +444,7 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			local state = shell_io.capture_workspace()
+			local state = workspace_state_mod.get_workspace_state()
 			shell_io.save(state)
 
 			expect(fs.exists(new_root .. "workspace/dir-test.json")).to.equal(true)

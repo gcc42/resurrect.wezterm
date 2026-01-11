@@ -136,11 +136,9 @@ function pub.change_state_save_dir(directory)
 end
 
 ---Sets the maximum number of lines to capture from pane scrollback
----Syncs with pane_tree module and shell/io module
 ---@param max_nlines integer
 function pub.set_max_nlines(max_nlines)
 	require("resurrect.pane_tree").max_nlines = max_nlines
-	shell_io.max_nlines = max_nlines
 end
 
 return pub
