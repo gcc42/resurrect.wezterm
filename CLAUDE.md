@@ -31,10 +31,13 @@ Run before committing:
 make all  # Runs: fix → lint → check → test
 ```
 
-All 151+ tests must pass.
+All lint checks and tests must pass.
 
 ## Code Style
 
 - Tabs for indentation (width 4)
 - 120 character line limit
 - LuaLS type annotations required on all functions
+- All code must be as declarative, functional and simple as possible
+- Use the functional core imperative shell pattern to separate the IO from the core
+- Keep the robustness and error handling in mind
