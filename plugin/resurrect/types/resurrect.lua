@@ -95,3 +95,19 @@
 ---@field is_bottom fun(root: RawPaneData|PaneTree, pane: RawPaneData|PaneTree): boolean
 ---@field pop_connected_bottom fun(root: PaneTree, panes: RawPaneData[]): RawPaneData?
 ---@field pop_connected_right fun(root: PaneTree, panes: RawPaneData[]): RawPaneData?
+
+---@alias StateType "workspace"|"window"|"tab"
+
+---@class ShellIO
+---@field save_state_dir string Directory where state files are saved
+---@field max_nlines number Maximum lines to capture from pane scrollback
+---@field build_file_path fun(name: string, state_type: StateType): string
+---@field capture_workspace fun(): WorkspaceState
+---@field capture_window fun(mux_win: MuxWindow): WindowState
+---@field capture_tab fun(mux_tab: MuxTab): TabState
+---@field save fun(state: WorkspaceState|WindowState|TabState, opt_name?: string): boolean
+---@field load fun(name: string, state_type: StateType): table|nil
+---@field delete fun(file_path: string): boolean
+---@field write_current_state fun(name: string, state_type: StateType): boolean, string|nil
+---@field read_current_state fun(): string|nil, StateType|nil
+---@field change_state_dir fun(directory: string): nil
