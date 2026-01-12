@@ -4,7 +4,7 @@
 
 ---@type Wezterm
 local wezterm = require("wezterm")
-local file_io = require("resurrect.file_io")
+local file_io = require("resurrect.shell.file_io")
 local utils = require("resurrect.utils")
 local core = require("resurrect.core.pane_tree")
 

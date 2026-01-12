@@ -123,7 +123,7 @@ end
 --- Merges user-supplied options with default options
 --- @param user_opts encryption_opts
 function pub.set_encryption(user_opts)
-	require("resurrect.file_io").set_encryption(user_opts)
+	require("resurrect.shell.file_io").set_encryption(user_opts)
 end
 
 ---Changes the directory to save the state to
