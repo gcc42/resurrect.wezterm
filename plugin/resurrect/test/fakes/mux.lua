@@ -682,6 +682,28 @@ function mux.all_windows()
 	return all_windows
 end
 
+---Set the active workspace by name
+---@param name string The workspace name to set as active
+function mux.set_active_workspace(name)
+	active_workspace = name
+end
+
+---Rename a workspace
+---@param old_name string The current workspace name
+---@param new_name string The new workspace name
+function mux.rename_workspace(old_name, new_name)
+	-- Update the active workspace if it matches the old name
+	if active_workspace == old_name then
+		active_workspace = new_name
+	end
+	-- Update workspace names on all windows belonging to the old workspace
+	for _, window in ipairs(all_windows) do
+		if window._workspace == old_name then
+			window._workspace = new_name
+		end
+	end
+end
+
 function mux.spawn_window(args)
 	args = args or {}
 	local workspace_name = args.workspace or active_workspace
