@@ -1,7 +1,7 @@
 ---@type Wezterm
 local wezterm = require("wezterm")
 local utils = require("resurrect.utils")
-local file_io = require("resurrect.file_io")
+local file_io = require("resurrect.shell.file_io")
 local pub = {}
 
 ---@alias fmt_fun fun(label: string): string
