@@ -62,31 +62,23 @@ describe("Shell IO", function()
 	---------------------------------------------------------------------------
 
 	describe("build_file_path", function()
-		it("constructs correct path for workspace state", function()
-			local path = shell_io.build_file_path("my-workspace", "workspace")
+		it("constructs correct paths for all state types", function()
+			local workspace_path = shell_io.build_file_path("my-workspace", "workspace")
+			expect(workspace_path).to.match("workspace")
+			expect(workspace_path).to.match("my%-workspace%.json$")
 
-			expect(path).to.match("workspace")
-			expect(path).to.match("my%-workspace%.json$")
-		end)
+			local window_path = shell_io.build_file_path("my-window", "window")
+			expect(window_path).to.match("window")
+			expect(window_path).to.match("my%-window%.json$")
 
-		it("constructs correct path for window state", function()
-			local path = shell_io.build_file_path("my-window", "window")
-
-			expect(path).to.match("window")
-			expect(path).to.match("my%-window%.json$")
-		end)
-
-		it("constructs correct path for tab state", function()
-			local path = shell_io.build_file_path("my-tab", "tab")
-
-			expect(path).to.match("tab")
-			expect(path).to.match("my%-tab%.json$")
+			local tab_path = shell_io.build_file_path("my-tab", "tab")
+			expect(tab_path).to.match("tab")
+			expect(tab_path).to.match("my%-tab%.json$")
 		end)
 
 		it("sanitizes filename with invalid characters", function()
 			local path = shell_io.build_file_path("my/bad:name", "workspace")
 
-			-- Should not contain the invalid characters
 			expect(path).to_not.match("/bad:")
 			expect(path).to.match("my%+bad_name%.json$")
 		end)
@@ -97,55 +89,28 @@ describe("Shell IO", function()
 	---------------------------------------------------------------------------
 
 	describe("save", function()
-		it("saves workspace state to file", function()
+		it("saves all state types to file", function()
 			local workspace = mux.workspace("save-test")
-				:window("main")
-				:tab("tab")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/home", is_active = true })
-				:build()
-			mux.set_active(workspace)
-
-			local state = workspace_state_mod.get_workspace_state()
-			local success = shell_io.save(state)
-
-			expect(success).to.equal(true)
-
-			local file_path = fs.get_root() .. "/workspace/save-test.json"
-			expect(fs.exists(file_path)).to.equal(true)
-		end)
-
-		it("saves window state to file", function()
-			local workspace = mux.workspace("win-save")
 				:window("my-window")
-				:tab("tab")
-				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/home", is_active = true })
-				:build()
-			mux.set_active(workspace)
-
-			local state = window_state_mod.get_window_state(workspace.windows[1])
-			local success = shell_io.save(state)
-
-			expect(success).to.equal(true)
-
-			local file_path = fs.get_root() .. "/window/my-window.json"
-			expect(fs.exists(file_path)).to.equal(true)
-		end)
-
-		it("saves tab state to file", function()
-			local workspace = mux.workspace("tab-save")
-				:window("main")
 				:tab("my-tab")
 				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/home", is_active = true })
 				:build()
 			mux.set_active(workspace)
 
-			local state = tab_state_mod.get_tab_state(workspace.windows[1]:tabs()[1])
-			local success = shell_io.save(state)
+			-- Workspace
+			local ws_state = workspace_state_mod.get_workspace_state()
+			expect(shell_io.save(ws_state)).to.equal(true)
+			expect(fs.exists(fs.get_root() .. "/workspace/save-test.json")).to.equal(true)
 
-			expect(success).to.equal(true)
+			-- Window
+			local win_state = window_state_mod.get_window_state(workspace.windows[1])
+			expect(shell_io.save(win_state)).to.equal(true)
+			expect(fs.exists(fs.get_root() .. "/window/my-window.json")).to.equal(true)
 
-			local file_path = fs.get_root() .. "/tab/my-tab.json"
-			expect(fs.exists(file_path)).to.equal(true)
+			-- Tab
+			local tab_state = tab_state_mod.get_tab_state(workspace.windows[1]:tabs()[1])
+			expect(shell_io.save(tab_state)).to.equal(true)
+			expect(fs.exists(fs.get_root() .. "/tab/my-tab.json")).to.equal(true)
 		end)
 
 		it("uses custom name when provided", function()
@@ -159,8 +124,7 @@ describe("Shell IO", function()
 			local state = workspace_state_mod.get_workspace_state()
 			shell_io.save(state, "custom-name")
 
-			local file_path = fs.get_root() .. "/workspace/custom-name.json"
-			expect(fs.exists(file_path)).to.equal(true)
+			expect(fs.exists(fs.get_root() .. "/workspace/custom-name.json")).to.equal(true)
 		end)
 
 		it("emits write_state events", function()
@@ -181,7 +145,7 @@ describe("Shell IO", function()
 			expect(has_event(events, "resurrect.file_io.write_state.finished")).to.equal(true)
 		end)
 
-		it("returns false for unknown state type", function()
+		it("returns false and emits error for unknown state type", function()
 			wezterm._test.clear_emitted_events()
 
 			local success = shell_io.save({ unknown = "data" })
@@ -198,37 +162,23 @@ describe("Shell IO", function()
 	---------------------------------------------------------------------------
 
 	describe("load", function()
-		it("loads workspace state from file", function()
+		it("loads all state types from file", function()
 			fs.mkdir(fs.get_root() .. "/workspace")
-			local json_data = '{"workspace":"loaded-ws","window_states":[]}'
-			fs.write(fs.get_root() .. "/workspace/loaded-ws.json", json_data)
-
-			local state = shell_io.load("loaded-ws", "workspace")
-
-			expect(state).to.exist()
-			expect(state.workspace).to.equal("loaded-ws")
-		end)
-
-		it("loads window state from file", function()
 			fs.mkdir(fs.get_root() .. "/window")
-			local json_data = '{"title":"loaded-win","tabs":[]}'
-			fs.write(fs.get_root() .. "/window/loaded-win.json", json_data)
-
-			local state = shell_io.load("loaded-win", "window")
-
-			expect(state).to.exist()
-			expect(state.title).to.equal("loaded-win")
-		end)
-
-		it("loads tab state from file", function()
 			fs.mkdir(fs.get_root() .. "/tab")
-			local json_data = '{"title":"loaded-tab","pane_tree":{}}'
-			fs.write(fs.get_root() .. "/tab/loaded-tab.json", json_data)
 
-			local state = shell_io.load("loaded-tab", "tab")
+			fs.write(fs.get_root() .. "/workspace/loaded-ws.json", '{"workspace":"loaded-ws","window_states":[]}')
+			fs.write(fs.get_root() .. "/window/loaded-win.json", '{"title":"loaded-win","tabs":[]}')
+			fs.write(fs.get_root() .. "/tab/loaded-tab.json", '{"title":"loaded-tab","pane_tree":{}}')
 
-			expect(state).to.exist()
-			expect(state.title).to.equal("loaded-tab")
+			local ws_state = shell_io.load("loaded-ws", "workspace")
+			expect(ws_state.workspace).to.equal("loaded-ws")
+
+			local win_state = shell_io.load("loaded-win", "window")
+			expect(win_state.title).to.equal("loaded-win")
+
+			local tab_state = shell_io.load("loaded-tab", "tab")
+			expect(tab_state.title).to.equal("loaded-tab")
 		end)
 
 		it("emits load_state events on success", function()
@@ -244,7 +194,7 @@ describe("Shell IO", function()
 			expect(has_event(events, "resurrect.state_manager.load_state.finished")).to.equal(true)
 		end)
 
-		it("emits error event for invalid JSON", function()
+		it("returns nil and emits error event for invalid JSON", function()
 			fs.mkdir(fs.get_root() .. "/workspace")
 			fs.write(fs.get_root() .. "/workspace/bad-json.json", "not valid json {{{")
 
@@ -264,32 +214,24 @@ describe("Shell IO", function()
 	---------------------------------------------------------------------------
 
 	describe("delete", function()
-		it("deletes existing state file", function()
+		it("deletes existing state file and emits events", function()
 			fs.mkdir(fs.get_root() .. "/workspace")
 			fs.write(fs.get_root() .. "/workspace/to-delete.json", '{"workspace":"to-delete"}')
 
 			expect(fs.exists(fs.get_root() .. "/workspace/to-delete.json")).to.equal(true)
 
+			wezterm._test.clear_emitted_events()
 			local success = shell_io.delete("workspace/to-delete.json")
 
 			expect(success).to.equal(true)
 			expect(fs.exists(fs.get_root() .. "/workspace/to-delete.json")).to.equal(false)
-		end)
-
-		it("emits delete_state events", function()
-			fs.mkdir(fs.get_root() .. "/workspace")
-			fs.write(fs.get_root() .. "/workspace/delete-events.json", "{}")
-
-			wezterm._test.clear_emitted_events()
-
-			shell_io.delete("workspace/delete-events.json")
 
 			local events = wezterm._test.get_emitted_events()
 			expect(has_event(events, "resurrect.state_manager.delete_state.start")).to.equal(true)
 			expect(has_event(events, "resurrect.state_manager.delete_state.finished")).to.equal(true)
 		end)
 
-		it("emits error event for non-existent file", function()
+		it("returns false and emits error for non-existent file", function()
 			wezterm._test.clear_emitted_events()
 
 			local success = shell_io.delete("workspace/nonexistent.json")
@@ -308,71 +250,37 @@ describe("Shell IO", function()
 	describe("current state tracking", function()
 		it("writes and reads current state", function()
 			local success, _ = shell_io.write_current_state("my-workspace", "workspace")
-
 			expect(success).to.equal(true)
 
 			local name, state_type = shell_io.read_current_state()
-
 			expect(name).to.equal("my-workspace")
 			expect(state_type).to.equal("workspace")
 		end)
 
-		it("returns nil for non-existent current state", function()
+		it("returns nil for missing or invalid current state", function()
 			-- Reset to a fresh directory
 			local new_root = fs.reset() .. "/"
 			shell_io.change_state_dir(new_root)
 
 			local name, state_type = shell_io.read_current_state()
-
 			expect(name).to.equal(nil)
 			expect(state_type).to.equal(nil)
-		end)
 
-		it("returns nil for invalid state type", function()
 			-- Write an invalid state type directly to file
-			local file_path = fs.get_root() .. "/current_state"
-			fs.write(file_path, "my-workspace\ninvalid-type")
-
-			local name, state_type = shell_io.read_current_state()
-
+			fs.write(fs.get_root() .. "/current_state", "my-workspace\ninvalid-type")
+			name, state_type = shell_io.read_current_state()
 			expect(name).to.equal(nil)
 			expect(state_type).to.equal(nil)
 		end)
 	end)
 
 	---------------------------------------------------------------------------
-	-- Round-Trip Tests (save via shell_io, load via shell_io)
+	-- Round-Trip Tests (shell_io layer - complex layouts and scrollback)
+	-- Note: Basic round-trip tests are in persistence_spec.lua
 	---------------------------------------------------------------------------
 
 	describe("round-trip", function()
-		it("preserves workspace state through save/load", function()
-			local workspace = mux.workspace("roundtrip-test")
-				:window("main")
-				:tab("dev")
-				:pane({
-					left = 0,
-					top = 0,
-					width = 160,
-					height = 48,
-					cwd = "/project",
-					is_active = true,
-				})
-				:build()
-			mux.set_active(workspace)
-
-			-- Capture using *_state module and save
-			local original = workspace_state_mod.get_workspace_state()
-			shell_io.save(original)
-
-			-- Load back
-			local loaded = shell_io.load("roundtrip-test", "workspace")
-
-			expect(loaded.workspace).to.equal(original.workspace)
-			expect(#loaded.window_states).to.equal(#original.window_states)
-			expect(loaded.window_states[1].tabs[1].pane_tree.cwd).to.equal("/project")
-		end)
-
-		it("preserves complex layout through round-trip", function()
+		it("preserves complex IDE layout with nested structure", function()
 			local workspace = mux.workspace("complex-roundtrip")
 				:window("IDE")
 				:tab("dev")
@@ -382,14 +290,11 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			-- Capture and save
 			local original = workspace_state_mod.get_workspace_state()
 			shell_io.save(original)
 
-			-- Load back
 			local loaded = shell_io.load("complex-roundtrip", "workspace")
 
-			-- Verify nested structure preserved
 			local tree = loaded.window_states[1].tabs[1].pane_tree
 			expect(tree).to.exist()
 			expect(tree.right).to.exist()
@@ -412,14 +317,11 @@ describe("Shell IO", function()
 				:build()
 			mux.set_active(workspace)
 
-			-- Capture and save
 			local original = workspace_state_mod.get_workspace_state()
 			shell_io.save(original)
 
-			-- Load back
 			local loaded = shell_io.load("scrollback-test", "workspace")
 
-			expect(loaded.window_states[1].tabs[1].pane_tree.text).to.exist()
 			expect(loaded.window_states[1].tabs[1].pane_tree.text).to.match("file1.txt")
 		end)
 	end)
