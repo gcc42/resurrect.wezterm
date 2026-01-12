@@ -18,6 +18,7 @@ All PRs must target this fork's main branch:
 2. Push to origin (this fork)
 3. Create PRs targeting `gcc42/resurrect.wezterm` main branch
 4. Squash merge, then delete the feature branch
+5. NEVER force push unless explicitly approved by the user
 
 ## Commit Guidelines
 

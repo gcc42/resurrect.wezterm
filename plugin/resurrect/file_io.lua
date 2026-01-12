@@ -113,8 +113,15 @@ function pub.load_json(file_path)
 		end
 	else
 		local lines = {}
-		for line in io.lines(file_path) do
-			table.insert(lines, line)
+		local ok, err = pcall(function()
+			for line in io.lines(file_path) do
+				table.insert(lines, line)
+			end
+		end)
+		if not ok then
+			wezterm.emit("resurrect.error", "Failed to read file: " .. tostring(err))
+			wezterm.log_error("Failed to read file: " .. tostring(err))
+			return nil
 		end
 		json = table.concat(lines)
 	end
