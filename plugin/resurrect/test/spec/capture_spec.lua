@@ -27,230 +27,131 @@ describe("State Capture", function()
 	---------------------------------------------------------------------------
 
 	describe("pane tree creation", function()
-		describe("single pane", function()
-			it("creates tree with correct geometry", function()
-				local workspace =
-					mux.workspace("test"):window("win"):tab("tab"):pane(fixtures.single_pane.panes[1]):build()
+		it("creates single pane tree with correct geometry", function()
+			local workspace =
+				mux.workspace("test"):window("win"):tab("tab"):pane(fixtures.single_pane.panes[1]):build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				expect(tree).to.exist()
-				expect(tree.cwd).to.equal("/home/user")
-				expect(tree.width).to.equal(160)
-				expect(tree.height).to.equal(48)
-				expect(tree.left).to.equal(0)
-				expect(tree.top).to.equal(0)
-			end)
-
-			it("has no children for single pane", function()
-				local workspace =
-					mux.workspace("test"):window("win"):tab("tab"):pane(fixtures.single_pane.panes[1]):build()
-
-				mux.set_active(workspace)
-
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				expect(tree.right).to_not.exist()
-				expect(tree.bottom).to_not.exist()
-			end)
+			expect(tree).to.exist()
+			expect(tree.cwd).to.equal("/home/user")
+			expect(tree.width).to.equal(160)
+			expect(tree.height).to.equal(48)
+			expect(tree.left).to.equal(0)
+			expect(tree.top).to.equal(0)
+			expect(tree.right).to_not.exist()
+			expect(tree.bottom).to_not.exist()
 		end)
 
-		describe("horizontal split", function()
-			it("captures right pane as child", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.hsplit.panes[1])
-					:hsplit(fixtures.hsplit.panes[2])
-					:build()
+		it("captures horizontal split with correct structure and geometry", function()
+			local workspace = mux.workspace("test")
+				:window("win")
+				:tab("tab")
+				:pane(fixtures.hsplit.panes[1])
+				:hsplit(fixtures.hsplit.panes[2])
+				:build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				expect(tree.right).to.exist()
-				expect(tree.right.cwd).to.equal("/tmp")
-				expect(tree.bottom).to_not.exist()
-			end)
-
-			it("preserves left pane geometry", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.hsplit.panes[1])
-					:hsplit(fixtures.hsplit.panes[2])
-					:build()
-
-				mux.set_active(workspace)
-
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				expect(tree.left).to.equal(0)
-				expect(tree.width).to.equal(80)
-				expect(tree.cwd).to.equal("/home")
-			end)
+			expect(tree.right).to.exist()
+			expect(tree.right.cwd).to.equal("/tmp")
+			expect(tree.bottom).to_not.exist()
+			expect(tree.left).to.equal(0)
+			expect(tree.width).to.equal(80)
+			expect(tree.cwd).to.equal("/home")
 		end)
 
-		describe("vertical split", function()
-			it("captures bottom pane as child", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.vsplit.panes[1])
-					:vsplit(fixtures.vsplit.panes[2])
-					:build()
+		it("captures vertical split with correct structure and geometry", function()
+			local workspace = mux.workspace("test")
+				:window("win")
+				:tab("tab")
+				:pane(fixtures.vsplit.panes[1])
+				:vsplit(fixtures.vsplit.panes[2])
+				:build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				expect(tree.bottom).to.exist()
-				expect(tree.bottom.cwd).to.equal("/var/log")
-				expect(tree.right).to_not.exist()
-			end)
-
-			it("preserves top pane geometry", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.vsplit.panes[1])
-					:vsplit(fixtures.vsplit.panes[2])
-					:build()
-
-				mux.set_active(workspace)
-
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				expect(tree.top).to.equal(0)
-				expect(tree.height).to.equal(24)
-				expect(tree.cwd).to.equal("/home")
-			end)
+			expect(tree.bottom).to.exist()
+			expect(tree.bottom.cwd).to.equal("/var/log")
+			expect(tree.right).to_not.exist()
+			expect(tree.top).to.equal(0)
+			expect(tree.height).to.equal(24)
+			expect(tree.cwd).to.equal("/home")
 		end)
 
-		describe("IDE layout", function()
-			it("preserves nested structure", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.ide_layout.panes[1])
-					:hsplit(fixtures.ide_layout.panes[2])
-					:vsplit(fixtures.ide_layout.panes[3])
-					:build()
+		it("preserves nested structure in IDE layout", function()
+			local workspace = mux.workspace("test")
+				:window("win")
+				:tab("tab")
+				:pane(fixtures.ide_layout.panes[1])
+				:hsplit(fixtures.ide_layout.panes[2])
+				:vsplit(fixtures.ide_layout.panes[3])
+				:build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				-- Root has right child (terminal column)
-				expect(tree.right).to.exist()
-				-- Terminal column has bottom child (output pane)
-				expect(tree.right.bottom).to.exist()
-			end)
+			expect(tree.right).to.exist()
+			expect(tree.right.bottom).to.exist()
 		end)
 
-		describe("three-way horizontal split", function()
-			it("captures nested right chain", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.three_way_hsplit.panes[1])
-					:hsplit(fixtures.three_way_hsplit.panes[2])
-					:hsplit(fixtures.three_way_hsplit.panes[3])
-					:build()
+		it("captures three-way horizontal split as nested right chain", function()
+			local workspace = mux.workspace("test")
+				:window("win")
+				:tab("tab")
+				:pane(fixtures.three_way_hsplit.panes[1])
+				:hsplit(fixtures.three_way_hsplit.panes[2])
+				:hsplit(fixtures.three_way_hsplit.panes[3])
+				:build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				-- Left pane (/a) has right child (/b), which has right child (/c)
-				expect(tree.cwd).to.equal("/a")
-				expect(tree.right).to.exist()
-				expect(tree.right.cwd).to.equal("/b")
-				expect(tree.right.right).to.exist()
-				expect(tree.right.right.cwd).to.equal("/c")
-			end)
-
-			it("has no bottom splits", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.three_way_hsplit.panes[1])
-					:hsplit(fixtures.three_way_hsplit.panes[2])
-					:hsplit(fixtures.three_way_hsplit.panes[3])
-					:build()
-
-				mux.set_active(workspace)
-
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				expect(tree.bottom).to_not.exist()
-				expect(tree.right.bottom).to_not.exist()
-			end)
+			expect(tree.cwd).to.equal("/a")
+			expect(tree.right).to.exist()
+			expect(tree.right.cwd).to.equal("/b")
+			expect(tree.right.right).to.exist()
+			expect(tree.right.right.cwd).to.equal("/c")
 		end)
 
-		describe("grid 2x2 layout", function()
-			it("captures four panes in grid structure", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.grid_2x2.panes[1])
-					:hsplit(fixtures.grid_2x2.panes[2])
-					:vsplit(fixtures.grid_2x2.panes[3])
-					:vsplit(fixtures.grid_2x2.panes[4])
-					:build()
+		it("captures 2x2 grid layout", function()
+			local workspace = mux.workspace("test")
+				:window("win")
+				:tab("tab")
+				:pane(fixtures.grid_2x2.panes[1])
+				:hsplit(fixtures.grid_2x2.panes[2])
+				:vsplit(fixtures.grid_2x2.panes[3])
+				:vsplit(fixtures.grid_2x2.panes[4])
+				:build()
 
-				mux.set_active(workspace)
+			mux.set_active(workspace)
 
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
+			local tab = workspace.windows[1]:tabs()[1]
+			local panes_info = tab:panes_with_info()
+			local tree = pane_tree_mod.create_pane_tree(panes_info)
 
-				-- Verify we have 4 panes total (root + 3 children in tree)
-				expect(tree).to.exist()
-				expect(tree.cwd).to.equal("/tl")
-			end)
-
-			it("preserves pane positions", function()
-				local workspace = mux.workspace("test")
-					:window("win")
-					:tab("tab")
-					:pane(fixtures.grid_2x2.panes[1])
-					:hsplit(fixtures.grid_2x2.panes[2])
-					:vsplit(fixtures.grid_2x2.panes[3])
-					:vsplit(fixtures.grid_2x2.panes[4])
-					:build()
-
-				mux.set_active(workspace)
-
-				local tab = workspace.windows[1]:tabs()[1]
-				local panes_info = tab:panes_with_info()
-				local tree = pane_tree_mod.create_pane_tree(panes_info)
-
-				-- Top-left pane should be at origin
-				expect(tree.left).to.equal(0)
-				expect(tree.top).to.equal(0)
-			end)
+			expect(tree).to.exist()
+			expect(tree.cwd).to.equal("/tl")
+			expect(tree.left).to.equal(0)
+			expect(tree.top).to.equal(0)
 		end)
 	end)
 

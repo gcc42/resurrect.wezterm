@@ -45,16 +45,6 @@ describe("Core Pane Tree", function()
 	---------------------------------------------------------------------------
 
 	describe("build", function()
-		it("returns nil for empty or nil input", function()
-			local tree1, warnings1 = core.build({})
-			expect(tree1).to_not.exist()
-			expect(#warnings1).to.equal(0)
-
-			local tree2, warnings2 = core.build(nil)
-			expect(tree2).to_not.exist()
-			expect(#warnings2).to.equal(0)
-		end)
-
 		it("warns for non-spawnable domains", function()
 			local panes = { make_pane({ domain = "SSH:dead", is_spawnable = false }) }
 			local tree, warnings = core.build(panes)

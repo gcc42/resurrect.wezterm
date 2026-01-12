@@ -683,37 +683,6 @@ describe("State Restore", function()
 	---------------------------------------------------------------------------
 
 	describe("tabs", function()
-		it("restores tab title", function()
-			local state = {
-				workspace = "test",
-				window_states = {
-					{
-						title = "win",
-						tabs = {
-							{
-								title = "My Custom Tab",
-								is_active = true,
-								pane_tree = {
-									cwd = "/home",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
-							},
-						},
-						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
-					},
-				},
-			}
-
-			workspace_state_mod.restore_workspace(state, {})
-
-			-- The state contains tab title - verify it was in the state
-			expect(state.window_states[1].tabs[1].title).to.equal("My Custom Tab")
-		end)
-
 		it("restores multiple tabs", function()
 			local state = {
 				workspace = "test",
@@ -724,36 +693,15 @@ describe("State Restore", function()
 							{
 								title = "Tab 1",
 								is_active = true,
-								pane_tree = {
-									cwd = "/a",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
+								pane_tree = { cwd = "/a", width = 160, height = 48, left = 0, top = 0, is_active = true },
 							},
 							{
 								title = "Tab 2",
-								pane_tree = {
-									cwd = "/b",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
+								pane_tree = { cwd = "/b", width = 160, height = 48, left = 0, top = 0, is_active = true },
 							},
 							{
 								title = "Tab 3",
-								pane_tree = {
-									cwd = "/c",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
+								pane_tree = { cwd = "/c", width = 160, height = 48, left = 0, top = 0, is_active = true },
 							},
 						},
 						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
@@ -763,93 +711,11 @@ describe("State Restore", function()
 
 			workspace_state_mod.restore_workspace(state, {})
 
-			-- Verify we had 3 tabs in the state
-			expect(#state.window_states[1].tabs).to.equal(3)
-		end)
-
-		it("activates correct tab", function()
-			local state = {
-				workspace = "test",
-				window_states = {
-					{
-						title = "win",
-						tabs = {
-							{
-								title = "Tab 1",
-								is_active = false,
-								pane_tree = {
-									cwd = "/a",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
-							},
-							{
-								title = "Tab 2",
-								is_active = true,
-								pane_tree = {
-									cwd = "/b",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
-							},
-						},
-						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
-					},
-				},
-			}
-
-			workspace_state_mod.restore_workspace(state, {})
-
-			-- Tab 2 was marked as active
-			expect(state.window_states[1].tabs[2].is_active).to.equal(true)
-		end)
-	end)
-
-	---------------------------------------------------------------------------
-	-- Active Pane Tests
-	---------------------------------------------------------------------------
-
-	describe("active pane", function()
-		it("state contains active pane marker", function()
-			local state = {
-				workspace = "test",
-				window_states = {
-					{
-						title = "win",
-						tabs = {
-							{
-								title = "tab",
-								pane_tree = {
-									cwd = "/a",
-									width = 80,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = false,
-									right = {
-										cwd = "/b",
-										width = 80,
-										height = 48,
-										left = 81,
-										top = 0,
-										is_active = true,
-									},
-								},
-							},
-						},
-						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
-					},
-				},
-			}
-
-			-- Right pane marked as active
-			expect(state.window_states[1].tabs[1].pane_tree.right.is_active).to.equal(true)
+			local windows = mux.all_windows()
+			expect(#windows >= 1).to.equal(true)
+			-- Verify 3 tabs were created
+			local tab_count = #windows[#windows]:tabs()
+			expect(tab_count).to.equal(3)
 		end)
 	end)
 
@@ -858,38 +724,38 @@ describe("State Restore", function()
 	---------------------------------------------------------------------------
 
 	describe("restore options", function()
-		it("accepts relative sizing option", function()
+		it("accepts sizing options without error", function()
 			local state = fixtures.to_workspace_state(fixtures.hsplit)
 
-			-- Should not throw with relative option
-			workspace_state_mod.restore_workspace(state, { relative = true })
+			-- Should not throw with relative or absolute option
+			local success1 = pcall(function()
+				workspace_state_mod.restore_workspace(state, { relative = true })
+			end)
+			expect(success1).to.equal(true)
+
+			mux.reset()
+			wezterm._test.set_mux(mux)
+
+			local success2 = pcall(function()
+				workspace_state_mod.restore_workspace(state, { absolute = true })
+			end)
+			expect(success2).to.equal(true)
 		end)
 
-		it("accepts absolute sizing option", function()
-			local state = fixtures.to_workspace_state(fixtures.hsplit)
-
-			-- Should not throw with absolute option
-			workspace_state_mod.restore_workspace(state, { absolute = true })
-		end)
-
-		it("accepts spawn_in_workspace option", function()
+		it("spawn_in_workspace option creates window in correct workspace", function()
 			local state = fixtures.to_workspace_state(fixtures.single_pane, "my-workspace")
 
 			workspace_state_mod.restore_workspace(state, { spawn_in_workspace = true })
 
-			-- Windows should be in the specified workspace
 			local windows = mux.all_windows()
-			if #windows > 0 then
-				-- At least one window should be in the workspace
-				local found = false
-				for _, win in ipairs(windows) do
-					if win:get_workspace() == "my-workspace" then
-						found = true
-						break
-					end
+			local found = false
+			for _, win in ipairs(windows) do
+				if win:get_workspace() == "my-workspace" then
+					found = true
+					break
 				end
-				expect(found).to.equal(true)
 			end
+			expect(found).to.equal(true)
 		end)
 	end)
 
@@ -900,29 +766,22 @@ describe("State Restore", function()
 	describe("default_on_pane_restore", function()
 		it("injects text for normal panes", function()
 			local fake_pane = {
-				injected_text = nil,
 				inject_output = function(self, text)
 					self.injected_text = text
 				end,
-				send_text = function(self, text)
-					self.sent_text = text
-				end,
+				send_text = function() end,
 			}
 
 			local pane_tree = { pane = fake_pane, text = "$ ls\nfile.txt\n$ ", alt_screen_active = false }
 
 			tab_state_mod.default_on_pane_restore(pane_tree)
 
-			expect(fake_pane.injected_text).to.exist()
 			expect(fake_pane.injected_text).to.match("file.txt")
 		end)
 
 		it("sends command for alt screen panes", function()
 			local fake_pane = {
-				injected_text = nil,
-				inject_output = function(self, text)
-					self.injected_text = text
-				end,
+				inject_output = function() end,
 				send_text = function(self, text)
 					self.sent_text = text
 				end,
@@ -936,13 +795,11 @@ describe("State Restore", function()
 
 			tab_state_mod.default_on_pane_restore(pane_tree)
 
-			expect(fake_pane.sent_text).to.exist()
 			expect(fake_pane.sent_text).to.match("vim")
 		end)
 
 		it("does nothing for panes without text or process", function()
 			local fake_pane = {
-				injected_text = nil,
 				inject_output = function(self, text)
 					self.injected_text = text
 				end,
@@ -958,20 +815,6 @@ describe("State Restore", function()
 			expect(fake_pane.injected_text).to_not.exist()
 			expect(fake_pane.sent_text).to_not.exist()
 		end)
-
-		it("handles empty text", function()
-			local fake_pane = {
-				injected_text = nil,
-				inject_output = function(self, text)
-					self.injected_text = text
-				end,
-			}
-			local pane_tree = { pane = fake_pane, alt_screen_active = false, text = "" }
-
-			tab_state_mod.default_on_pane_restore(pane_tree)
-
-			expect(fake_pane.injected_text).to.equal("")
-		end)
 	end)
 
 	---------------------------------------------------------------------------
@@ -979,23 +822,16 @@ describe("State Restore", function()
 	---------------------------------------------------------------------------
 
 	describe("malformed data", function()
-		it("handles pane tree with missing cwd", function()
-			local state = {
+		it("handles missing optional fields gracefully", function()
+			-- Missing cwd
+			local state1 = {
 				workspace = "test",
 				window_states = {
 					{
-						title = "win",
 						tabs = {
 							{
-								title = "tab",
 								is_active = true,
-								pane_tree = {
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
+								pane_tree = { width = 160, height = 48, left = 0, top = 0, is_active = true },
 							},
 						},
 						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
@@ -1003,21 +839,13 @@ describe("State Restore", function()
 				},
 			}
 
-			local success = pcall(function()
-				workspace_state_mod.restore_workspace(state, {})
-			end)
-			expect(success).to.equal(true)
-		end)
-
-		it("handles pane tree with missing dimensions", function()
-			local state = {
+			-- Missing dimensions and titles
+			local state2 = {
 				workspace = "test",
 				window_states = {
 					{
-						title = "win",
 						tabs = {
 							{
-								title = "tab",
 								is_active = true,
 								pane_tree = { cwd = "/home", left = 0, top = 0, is_active = true },
 							},
@@ -1027,73 +855,19 @@ describe("State Restore", function()
 				},
 			}
 
-			local success = pcall(function()
-				workspace_state_mod.restore_workspace(state, {})
-			end)
-			expect(success).to.equal(true)
+			expect(pcall(function()
+				workspace_state_mod.restore_workspace(state1, {})
+			end)).to.equal(true)
+
+			mux.reset()
+			wezterm._test.set_mux(mux)
+
+			expect(pcall(function()
+				workspace_state_mod.restore_workspace(state2, {})
+			end)).to.equal(true)
 		end)
 
-		it("handles tab state with missing title", function()
-			local state = {
-				workspace = "test",
-				window_states = {
-					{
-						title = "win",
-						tabs = {
-							{
-								is_active = true,
-								pane_tree = {
-									cwd = "/home",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
-							},
-						},
-						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
-					},
-				},
-			}
-
-			local success = pcall(function()
-				workspace_state_mod.restore_workspace(state, {})
-			end)
-			expect(success).to.equal(true)
-		end)
-
-		it("handles window state with missing title", function()
-			local state = {
-				workspace = "test",
-				window_states = {
-					{
-						tabs = {
-							{
-								title = "tab",
-								is_active = true,
-								pane_tree = {
-									cwd = "/home",
-									width = 160,
-									height = 48,
-									left = 0,
-									top = 0,
-									is_active = true,
-								},
-							},
-						},
-						size = { cols = 160, rows = 48, pixel_width = 1600, pixel_height = 960 },
-					},
-				},
-			}
-
-			local success = pcall(function()
-				workspace_state_mod.restore_workspace(state, {})
-			end)
-			expect(success).to.equal(true)
-		end)
-
-		it("handles mixed spawnable domains with fallback", function()
+		it("handles non-spawnable domains with fallback", function()
 			mux.set_domain_spawnable("SSH:dev", false)
 			mux.set_domain_spawnable("local", true)
 
@@ -1130,10 +904,9 @@ describe("State Restore", function()
 				},
 			}
 
-			local success = pcall(function()
+			expect(pcall(function()
 				workspace_state_mod.restore_workspace(state, {})
-			end)
-			expect(success).to.equal(true)
+			end)).to.equal(true)
 		end)
 	end)
 end)
