@@ -116,6 +116,68 @@ describe("Persistence", function()
 			expect(loaded_tree.right).to.exist()
 			expect(loaded_tree.right.cwd).to.equal(original_tree.right.cwd)
 		end)
+
+		it("preserves complex IDE layout through round-trip", function()
+			local workspace = mux.workspace("roundtrip-ide")
+				:window("main")
+				:tab("dev")
+				:pane(fixtures.ide_layout.panes[1])
+				:hsplit(fixtures.ide_layout.panes[2])
+				:vsplit(fixtures.ide_layout.panes[3])
+				:build()
+
+			mux.set_active(workspace)
+
+			local original = workspace_state_mod.get_workspace_state()
+			state_manager.save_state(original)
+
+			local loaded = state_manager.load_state("roundtrip-ide", "workspace")
+
+			local loaded_tree = loaded.window_states[1].tabs[1].pane_tree
+			expect(loaded_tree).to.exist()
+			expect(loaded_tree.right).to.exist()
+		end)
+
+		it("preserves multiple tabs through round-trip", function()
+			local workspace = mux.workspace("roundtrip-tabs")
+				:window("main")
+				:tab("Tab 1")
+				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/a", is_active = true })
+				:tab("Tab 2")
+				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/b", is_active = true })
+				:build()
+
+			mux.set_active(workspace)
+
+			local original = workspace_state_mod.get_workspace_state()
+			state_manager.save_state(original)
+
+			local loaded = state_manager.load_state("roundtrip-tabs", "workspace")
+
+			expect(#loaded.window_states[1].tabs).to.equal(2)
+			expect(loaded.window_states[1].tabs[1].title).to.equal("Tab 1")
+			expect(loaded.window_states[1].tabs[2].title).to.equal("Tab 2")
+		end)
+
+		it("preserves multiple windows through round-trip", function()
+			local workspace = mux.workspace("roundtrip-windows")
+				:window("Window 1")
+				:tab("tab")
+				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/a", is_active = true })
+				:window("Window 2")
+				:tab("tab")
+				:pane({ left = 0, top = 0, width = 160, height = 48, cwd = "/b", is_active = true })
+				:build()
+
+			mux.set_active(workspace)
+
+			local original = workspace_state_mod.get_workspace_state()
+			state_manager.save_state(original)
+
+			local loaded = state_manager.load_state("roundtrip-windows", "workspace")
+
+			expect(#loaded.window_states).to.equal(2)
+		end)
 	end)
 
 	---------------------------------------------------------------------------
